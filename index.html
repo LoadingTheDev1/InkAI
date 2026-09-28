@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>InkAI</title>
-<meta name="description" content="Teach InkAI your handwriting once, then type anything and get it back handwritten. Works offline on iPad.">
+<meta name="description" content="InkAI turns typed text into your own handwriting, as a PDF or image. Works offline on iPad.">
 <meta name="theme-color" content="#0B6B5C">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -185,6 +185,11 @@ textarea { width: 100%; min-height: 170px; resize: vertical; }
 .per-row select { padding: 5px 8px; font-size: 14px; }
 .grid-chars button.current { border-color: var(--accent); color: var(--text); font-weight: 700; }
 .grid-group { display: grid; gap: 6px; }
+.tips { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; justify-items: start; }
+.tips-title { font-family: var(--display); font-weight: 700; font-size: 16px; }
+.tips ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.tips button { padding: 6px 12px; font-size: 13px; background: var(--surface); }
+.tips-show { justify-self: start; padding: 5px 10px; font-size: 13px; }
 .restart { display: grid; gap: 8px; justify-items: start; }
 .restart-confirm { display: grid; gap: 8px; background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 10px 12px; width: 100%; }
 .grid-group h3 { font-size: 12px; margin: 0; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
@@ -233,7 +238,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     <div class="brand">
       <div class="brand-row"><h1 class="logo-wrap"><svg class="logo" viewBox="0 0 5.546 2.658" role="img" aria-label="InkAI" xmlns="http://www.w3.org/2000/svg"><rect width="5.546" height="2.658" rx="0.585" fill="#0B6B5C"/><path d="M0.633 0.606L0.645 0.619L0.655 0.636L0.655 0.656L0.650 0.674L0.635 0.689L0.620 0.696L0.600 0.696L0.583 0.691L0.562 0.674L0.552 0.654L0.550 0.636L0.570 0.536L0.593 0.506L0.603 0.499L0.615 0.494L0.630 0.491L0.645 0.494L0.660 0.499L0.670 0.509L0.677 0.516L0.693 0.549L0.700 0.581L0.658 1.826L0.660 1.966L0.665 2.079L0.675 2.144L0.677 2.156L0.640 2.141L0.623 2.149L0.648 2.086L0.658 2.069L0.673 2.056L0.690 2.051L0.710 2.054L0.725 2.064L0.738 2.079L0.743 2.096L0.698 2.211L0.685 2.224L0.667 2.236L0.640 2.236L0.618 2.231L0.603 2.219L0.575 2.144L0.560 1.931L0.600 0.574L0.628 0.589L0.658 0.576L0.648 0.626L0.633 0.606ZM1.139 1.999L1.157 1.997L1.175 1.999L1.190 2.012L1.200 2.026L1.202 2.044L1.197 2.062L1.187 2.077L1.172 2.087L1.155 2.091L1.102 2.091L1.075 2.077L1.057 2.054L1.044 2.026L1.042 1.997L1.054 1.907L1.090 1.804L1.147 1.694L1.215 1.582L1.284 1.489L1.360 1.412L1.442 1.357L1.530 1.334L1.580 1.342L1.627 1.369L1.665 1.407L1.700 1.454L1.747 1.537L1.785 1.631L1.819 1.734L1.847 1.839L1.872 1.942L1.890 2.034L1.905 2.207L1.895 2.222L1.879 2.234L1.862 2.236L1.845 2.234L1.830 2.224L1.817 2.212L1.787 1.989L1.757 1.861L1.720 1.727L1.649 1.549L1.622 1.504L1.597 1.469L1.572 1.444L1.550 1.432L1.532 1.427L1.480 1.444L1.419 1.486L1.355 1.552L1.292 1.634L1.242 1.714L1.200 1.794L1.167 1.869L1.145 1.937L1.137 2.009L1.127 2.002ZM2.228 0.531L2.234 0.511L2.244 0.499L2.261 0.489L2.281 0.486L2.298 0.491L2.313 0.504L2.321 0.519L2.353 1.006L2.353 2.169L2.349 2.159L2.274 2.159L2.268 2.146L2.284 2.134L2.301 2.129L2.321 2.131L2.336 2.141L2.349 2.156L2.353 2.174L2.351 2.191L2.343 2.209L2.324 2.216L2.296 2.211L2.271 2.204L2.256 2.174L2.261 1.261L2.258 1.009L2.228 0.531ZM2.221 1.596L2.211 1.579L2.206 1.561L2.208 1.544L2.218 1.526L2.234 1.516L2.251 1.511L2.271 1.514L2.286 1.524L2.286 1.526L2.264 1.514L2.298 1.501L2.369 1.466L2.861 1.186L2.891 1.176L2.911 1.176L2.928 1.181L2.944 1.194L2.951 1.211L2.951 1.231L2.946 1.249L2.933 1.261L2.784 1.336L2.381 1.571L2.266 1.614L2.246 1.611L2.221 1.596ZM2.449 1.564L2.463 1.551L2.481 1.546L2.501 1.549L2.516 1.556L2.529 1.571L2.536 1.589L2.534 1.606L2.526 1.624L2.481 1.704L2.478 1.774L2.511 1.841L2.574 1.906L2.663 1.971L2.978 2.146L2.994 2.159L3.001 2.176L3.003 2.194L2.998 2.211L2.986 2.226L2.968 2.236L2.951 2.236L2.933 2.231L2.611 2.051L2.511 1.979L2.468 1.939L2.431 1.894L2.404 1.846L2.383 1.794L2.378 1.739L2.388 1.681L2.411 1.621L2.449 1.564ZM4.002 0.520L4.009 0.505L4.019 0.495L4.034 0.490L4.049 0.492L4.064 0.498L4.074 0.510L4.079 0.522L4.079 0.538L4.034 0.720L3.954 0.990L3.604 1.903L3.574 1.995L3.549 2.073L3.532 2.173L3.509 2.160L3.609 2.075L3.651 2.080L3.662 2.123L3.566 2.215L3.542 2.230L3.529 2.235L3.489 2.232L3.466 2.215L3.457 2.195L3.454 2.173L3.474 2.055L3.596 1.708L3.879 0.965L3.959 0.700ZM4.181 0.482L4.146 0.508L4.131 0.505L4.119 0.498L4.109 0.485L4.106 0.473L4.109 0.458L4.119 0.433L4.127 0.428L4.134 0.420L4.179 0.420L4.202 0.450L4.214 0.490L4.226 0.538L4.369 1.655L4.379 1.752L4.381 1.835L4.364 1.933L4.349 1.960L4.327 1.982L4.299 1.998L4.269 2.008L4.236 2.010L4.221 2.008L4.199 1.973L4.221 1.938L4.269 1.930L4.276 1.925L4.284 1.915L4.304 1.815L4.287 1.615L4.157 0.595L4.134 0.485L4.131 0.480L4.151 0.492L4.181 0.480ZM3.771 1.368L3.787 1.373L3.799 1.383L3.804 1.395L3.806 1.410L3.801 1.425L3.792 1.438L3.779 1.445L3.764 1.445L3.699 1.440L3.697 1.440L3.729 1.413L3.719 1.375L3.704 1.365L3.829 1.380L3.999 1.388L4.181 1.385L4.344 1.375L4.457 1.363L4.497 1.378L4.502 1.393L4.502 1.408L4.497 1.420L4.486 1.433L4.471 1.438L4.421 1.445L4.091 1.463L3.822 1.458L3.689 1.443L3.667 1.433L3.654 1.400L3.657 1.385L3.664 1.375L3.691 1.360L3.714 1.363ZM4.898 0.631L4.893 0.648L4.883 0.663L4.868 0.673L4.848 0.675L4.830 0.671L4.816 0.661L4.806 0.646L4.803 0.626L4.818 0.511L4.825 0.491L4.843 0.468L4.861 0.463L4.880 0.466L4.901 0.471L4.913 0.481L4.925 0.508L4.933 0.538L4.943 0.823L4.936 1.876L4.938 1.991L4.953 2.136L4.958 2.151L4.928 2.146L4.946 2.141L4.963 2.143L4.981 2.153L4.990 2.168L4.995 2.186L4.993 2.203L4.986 2.221L4.971 2.231L4.950 2.238L4.928 2.236L4.908 2.231L4.891 2.218L4.873 2.196L4.861 2.168L4.846 2.050L4.848 0.760L4.833 0.533L4.873 0.556L4.910 0.533Z" fill="#ffffff" stroke="#ffffff" stroke-width="0.05" stroke-linejoin="round"/></svg></h1><span class="byline">by Emre</span></div>
       <p class="pitch">Are u a lazy bum who can't even write his own homework or perhaps an insanely smart fellow who just happens to have sweaty hands? Well either way InkAI is for you.</p>
-      <p class="tagline">Teach it your letters once. Then type anything and get it back in your handwriting.</p>
+      <p class="tagline">Your handwriting, minus the hand cramps.</p>
     </div>
     <div class="row">
       <span class="who" id="who"></span>
@@ -257,7 +262,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
       </div>
     </div>
     <form class="section" id="setup-form">
-      <label class="field"><span>Name</span><input type="text" id="setup-name" maxlength="40" placeholder="For example: Lena" required></label>
+      <label class="field"><span>Name</span><input type="text" id="setup-name" maxlength="40" placeholder="For example: Ataberk" required></label>
       <fieldset class="field" style="border:0;padding:0;margin:0">
         <legend style="font-size:14px;margin-bottom:6px">Characters to teach</legend>
         <div class="checks" id="setup-sets"></div>
@@ -294,6 +299,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
             <p class="muted small" id="prompt-hint"></p>
           </div>
         </div>
+        <div class="tips" id="tips">
+          <p class="tips-title">Before you start</p>
+          <ul>
+            <li>Write every letter <b>on the dark line</b>. Tails of g, j, p, q and y hang below it.</li>
+            <li>The faint letter in each box only shows <b>how big</b> to write. Don't trace it or copy its shape. Write the letter the way you normally would.</li>
+            <li>Make each copy a little different, just like real handwriting. That's what makes the result look real.</li>
+          </ul>
+          <button type="button" class="ghost" id="tips-hide">Got it</button>
+        </div>
+        <button type="button" class="ghost tips-show" id="tips-show" hidden>Show writing tips</button>
         <div class="pads" id="pads"></div>
         <label class="check small"><input type="checkbox" id="ghost-toggle" checked> Show a faint guide letter in each box</label>
         <div class="teach-actions">
@@ -445,10 +460,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     return "turkish";
   }
   function hintFor(ch) {
-    if (".,;:!?'\"()-„".indexOf(ch) >= 0) return "Write it where it sits in a sentence: commas dip below the baseline, quotes sit up high.";
-    if (DESC.indexOf(ch) >= 0) return "Sit the body on the baseline and let the tail hang below it.";
-    if (/[A-ZÄÖÜÇĞİŞ0-9]/.test(ch)) return "Stand it on the baseline. The dotted top line is a guide for tall letters.";
-    return "Sit it on the solid baseline. The dashed line shows the height of a small x.";
+    if (".,;:!?'\"()-„".indexOf(ch) >= 0) return "Write it where it sits in a sentence: commas dip below the dark line, quotes sit up high.";
+    if (DESC.indexOf(ch) >= 0) return "Sit the body on the dark line and let the tail hang below it.";
+    if (/[A-ZÄÖÜÇĞİŞ0-9]/.test(ch)) return "Stand it on the dark line. The dotted top line is a guide for tall letters.";
+    return "Sit it on the dark line. The dashed line shows the height of a small x.";
   }
 
   // ---------------- storage ----------------
@@ -547,7 +562,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     var g = cs.getPropertyValue("--guide").trim() || "#bbb", gs = cs.getPropertyValue("--guide-strong").trim() || "#888";
     hline(yb - 1.8 * k, g, [2, 5], 1);
     hline(yb - 1.0 * k, g, [7, 6], 1.2);
-    hline(yb, gs, [], 1.5);
+    hline(yb, cs.getPropertyValue("--pad-ink").trim() || "#111", [], 2.2);
     hline(yb + 0.8 * k, g, [2, 5], 1);
     c.setLineDash([]);
     if (ghostOn && this.ghost) {
@@ -669,6 +684,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   $("btn-skip").addEventListener("click", function () { var chars = teachChars(); showChar((teach.idx + 1) % chars.length); });
   $("btn-back").addEventListener("click", function () { showChar(teach.idx - 1); });
   $("btn-undo").addEventListener("click", undo);
+  var tipsHidden = false;
+  try { tipsHidden = localStorage.getItem("inkai-tips") === "0"; } catch (e) { tipsHidden = false; }
+  function applyTips() { $("tips").hidden = tipsHidden; $("tips-show").hidden = !tipsHidden; }
+  applyTips();
+  $("tips-hide").addEventListener("click", function () { tipsHidden = true; try { localStorage.setItem("inkai-tips", "0"); } catch (e) { /* storage unavailable */ } applyTips(); });
+  $("tips-show").addEventListener("click", function () { tipsHidden = false; try { localStorage.setItem("inkai-tips", "1"); } catch (e) { /* storage unavailable */ } applyTips(); });
   $("ghost-toggle").checked = ghostOn;
   $("ghost-toggle").addEventListener("change", function () {
     ghostOn = this.checked;

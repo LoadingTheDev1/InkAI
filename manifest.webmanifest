@@ -1,7 +1,7 @@
 {
   "name": "InkAI",
   "short_name": "InkAI",
-  "description": "Teach it your handwriting once, then type anything and get it back handwritten.",
+  "description": "Turns typed text into your own handwriting.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

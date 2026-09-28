@@ -4,7 +4,7 @@
 
 <p align="center"><em>Are u a lazy bum who can't even write his own homework or perhaps an insanely smart fellow who just happens to have sweaty hands? Well either way InkAI is for you.</em></p>
 
-<p align="center">Teach it your handwriting once. Then type anything and get it back in your own handwriting, as a PDF or an image.</p>
+<p align="center">Type anything and InkAI writes it out in your own handwriting, as a PDF or an image.</p>
 
 ---
 
@@ -12,7 +12,7 @@
 
 ## What it does
 
-- **Learns your handwriting.** You write each letter a few times on guide lines, plus one short sentence so it learns your spacing.
+- **Learns your handwriting.** You write each letter 1–10 times on guide lines, plus one short sentence so it learns your spacing. You can add more samples any time.
 - **Writes anything you type.** Paste text and it's drawn letter by letter from your own samples.
 - **Never looks copy-pasted.** Every letter is picked from your samples at random and slightly reshaped each time, with small changes in size, tilt, spacing and line slope.
 - **Lots of settings.** Letter size, line spacing, word and letter spacing, pen thickness, shape variation and messiness.
@@ -34,7 +34,7 @@ An Apple Pencil gives the best results when teaching letters. Once you've used t
 
 ## How to teach it
 
-1. **Teach**: write each character in the boxes. Sit letters on the solid line. The dashed line is the height of a small x. Tails of g, j, p, q and y hang below.
+1. **Teach**: write each character in the boxes, on the dark line. The dashed line is the height of a small x, and tails of g, j, p, q and y hang below. The faint letter in each box only shows the size. Don't trace it; write the way you normally do.
 2. Write the spacing sentence at the end, the way you normally would.
 3. **Write**: type or paste your text, adjust the look, and save it as a PDF or PNG.
 4. **Handwritings** → **Save file** makes a backup of your handwriting. Load it on another device the same way.
@@ -70,6 +70,10 @@ Then open `http://localhost:8000`. To publish your own copy, fork the repo and t
 | `manifest.webmanifest` | Lets it be added to the home screen as an app |
 | `sw.js` | Makes it work offline |
 | `icon-*.png`, `apple-touch-icon.png` | App icons |
+
+## Credits
+
+Made by **Emre** ([@LoadingTheDev1](https://github.com/LoadingTheDev1)).
 
 ## License
 
