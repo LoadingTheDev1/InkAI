@@ -173,6 +173,8 @@ textarea { width: 100%; min-height: 170px; resize: vertical; }
 .grid-chars button.done { background: var(--accent-soft); color: var(--text); }
 .grid-chars button.current { border-color: var(--accent); color: var(--text); font-weight: 700; }
 .grid-group { display: grid; gap: 6px; }
+.restart { display: grid; gap: 8px; justify-items: start; }
+.restart-confirm { display: grid; gap: 8px; background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 10px 12px; width: 100%; }
 .grid-group h3 { font-size: 12px; margin: 0; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .sentence-pads { display: grid; gap: 10px; }
 .sentence-line { display: grid; gap: 4px; }
@@ -305,6 +307,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
       <div class="section">
         <div class="row" style="justify-content:space-between"><p class="eyebrow">Progress</p><span class="small muted" id="progress-text"></span></div>
         <div class="progress"><i id="progress-bar" style="width:0%"></i></div>
+        <div class="restart top" id="restart-box">
+          <button type="button" class="ghost danger" id="restart">Start over</button>
+          <div class="restart-confirm" id="restart-confirm" hidden>
+            <p class="small" id="restart-msg">Erase every letter taught for this handwriting?</p>
+            <div class="row"><button type="button" class="danger" id="restart-yes">Yes, start over</button><button type="button" class="ghost" id="restart-no">Cancel</button></div>
+          </div>
+        </div>
         <div id="char-grid" style="display:grid;gap:12px"></div>
         <div class="row">
           <button type="button" id="goto-sentence">Teach spacing</button>
@@ -318,7 +327,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   <section id="view-write" class="write" hidden>
     <form class="card panel" id="write-form" autocomplete="off">
       <div class="section">
-        <div class="row" style="justify-content:space-between"><label class="eyebrow" for="w-text">Your text</label><span class="small muted" id="w-count"></span></div>
+        <div class="row" style="justify-content:space-between"><label class="eyebrow" for="w-text">Your text</label><span class="row" style="gap:10px"><span class="small muted" id="w-count"></span><button type="button" class="ghost" id="w-clear" style="padding:5px 10px;font-size:13px">Clear</button></span></div>
         <textarea id="w-text" spellcheck="false"></textarea>
         <p class="warn" id="w-missing" hidden></p>
       </div>
@@ -672,6 +681,24 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   $("sent-clear").addEventListener("click", function () { teach.sentencePads.forEach(function (pd) { pd.clear(); }); });
   $("sent-undo").addEventListener("click", undo);
   $("goto-sentence").addEventListener("click", showSentence);
+  $("restart").addEventListener("click", function () {
+    var p = active(); if (!p) return;
+    var n = taughtCount(p);
+    $("restart-msg").textContent = n ? "Erase all " + n + " letters taught for " + p.name + "? You'll start again from \u201Ca\u201D." : "Nothing is taught yet, so there's nothing to erase.";
+    $("restart-yes").hidden = !n;
+    $("restart").hidden = true; $("restart-confirm").hidden = false;
+  });
+  $("restart-no").addEventListener("click", function () { $("restart-confirm").hidden = true; $("restart").hidden = false; });
+  $("restart-yes").addEventListener("click", function () {
+    var p = active(); if (!p) return;
+    p.glyphs = {}; p.spacing = { letter: 0.25, word: 1.5, learned: false }; p.updated = Date.now();
+    store.write = null; persist();
+    $("restart-confirm").hidden = true; $("restart").hidden = false;
+    teach.pads = []; teach.idx = 0;
+    $("capture").hidden = false; $("sentence").hidden = true;
+    buildPads(); showChar(0);
+    $("teach-status").textContent = "Started over. Write \u201Ca\u201D again.";
+  });
   $("goto-write").addEventListener("click", function () { switchView("write"); });
 
   // ---------------- setup ----------------
@@ -945,6 +972,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   $("write-form").addEventListener("input", function (e) { if (e.target.id === "w-text") { clearTimeout(wt); wt = setTimeout(renderWrite, 120); } else renderWrite(); });
   $("write-form").addEventListener("change", renderWrite);
   $("write-form").addEventListener("submit", function (e) { e.preventDefault(); });
+  $("w-clear").addEventListener("click", function () { $("w-text").value = ""; renderWrite(); $("w-text").focus(); $("w-status").textContent = "Text cleared."; });
   $("w-reroll").addEventListener("click", function () { store.write.seed = (store.write.seed * 1103515245 + 12345) >>> 0; renderWrite(); $("w-status").textContent = "New variation drawn."; });
 
   // PNG
