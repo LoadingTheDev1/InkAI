@@ -80,6 +80,7 @@ Made by **Emre** ([@LoadingTheDev1](https://github.com/LoadingTheDev1)).
 
 - Ata Demirdirek
 - Doruk Ege Tekeoğlu
+- Mehmet Eren
 - Ataberk Cesur
 
 ## License
