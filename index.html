@@ -216,7 +216,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
 .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
 .preview { display: grid; gap: 18px; justify-items: center; min-width: 0; }
 .preview-head { width: 100%; max-width: 780px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
-.sheet { width: 100%; max-width: 780px; display: grid; gap: 6px; margin: 0; }
+.sheet { width: 100%; max-width: calc(780px * var(--z, 1)); display: grid; gap: 6px; margin: 0; }
+.zoom-bar { width: 100%; max-width: 780px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.zoom-bar button { padding: 6px 12px; font-size: 16px; min-width: 40px; justify-content: center; }
+.zoom-bar #z-fit { font-size: 13px; }
+.zoom-bar output { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; font-size: 14px; }
+.zoom-box { width: 100%; overflow-x: auto; overflow-y: visible; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
+#w-pages { width: calc(var(--z, 1) * 100%); margin-inline: auto; }
 .sheet svg { display: block; width: 100%; height: auto; background: #fff; box-shadow: var(--sheet-shadow); border-radius: 2px; }
 .sheet figcaption { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .empty { max-width: 560px; padding: 24px; display: grid; gap: 12px; }
@@ -411,7 +417,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     </form>
     <section class="preview" aria-label="Preview">
       <div class="preview-head"><span id="w-pages-count"></span><span>A4 · each letter picked from your samples</span></div>
-      <div id="w-pages" class="preview"></div>
+      <div class="zoom-bar" role="group" aria-label="Zoom">
+        <button type="button" id="z-out" aria-label="Zoom out">−</button>
+        <output id="z-val">100%</output>
+        <button type="button" id="z-in" aria-label="Zoom in">+</button>
+        <button type="button" id="z-fit">Fit page</button>
+        <span class="small muted">Pinch or double-tap the page to zoom</span>
+      </div>
+      <div class="zoom-box" id="zoom-box"><div id="w-pages" class="preview"></div></div>
     </section>
   </section>
 
@@ -1117,6 +1130,63 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   $("write-form").addEventListener("submit", function (e) { e.preventDefault(); });
   $("w-clear").addEventListener("click", function () { $("w-text").value = ""; renderWrite(); $("w-text").focus(); $("w-status").textContent = "Text cleared."; });
   $("w-reroll").addEventListener("click", function () { store.write.seed = (store.write.seed * 1103515245 + 12345) >>> 0; renderWrite(); $("w-status").textContent = "New variation drawn."; });
+
+  // ---------------- preview zoom (Write screen only) ----------------
+  var zoom = 1;
+  function setZoom(z, cx, cy) {
+    z = Math.max(1, Math.min(4, z));
+    if (Math.abs(z - zoom) < 0.001) return;
+    var box = $("zoom-box"), pages = $("w-pages"), r = pages.getBoundingClientRect();
+    if (cx === undefined) { var br = box.getBoundingClientRect(); cx = br.left + br.width / 2; cy = Math.max(br.top, 0) + Math.min(window.innerHeight, br.bottom) / 2; }
+    var offX = cx - r.left, offY = cy - r.top, ratio = z / zoom;
+    zoom = z;
+    $("view-write").style.setProperty("--z", z.toFixed(3));
+    $("z-val").textContent = Math.round(z * 100) + "%";
+    box.scrollLeft += offX * ratio - offX;
+    window.scrollBy(0, offY * ratio - offY);
+  }
+  $("z-in").addEventListener("click", function () { setZoom(zoom * 1.25); });
+  $("z-out").addEventListener("click", function () { setZoom(zoom / 1.25); });
+  $("z-fit").addEventListener("click", function () { setZoom(1); });
+  (function () {
+    var box = $("zoom-box"), pts = {}, pinch = null, lastTap = 0, tapStart = null;
+    function two() { var k = Object.keys(pts); return k.length === 2 ? [pts[k[0]], pts[k[1]]] : null; }
+    box.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse") return;
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      tapStart = Object.keys(pts).length === 1 ? { x: e.clientX, y: e.clientY, t: Date.now() } : null;
+      var p = two();
+      if (p) pinch = { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1, z: zoom };
+    });
+    box.addEventListener("pointermove", function (e) {
+      if (!pts[e.pointerId]) return;
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var p = two();
+      if (p && pinch) {
+        e.preventDefault();
+        var d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+        setZoom(pinch.z * d / pinch.d, (p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
+      }
+    });
+    function up(e) {
+      if (!pts[e.pointerId]) return;
+      var wasPinch = !!pinch;
+      delete pts[e.pointerId];
+      if (Object.keys(pts).length < 2) pinch = null;
+      if (!wasPinch && tapStart && Date.now() - tapStart.t < 250 && Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) < 10) {
+        if (Date.now() - lastTap < 320) { setZoom(zoom > 1.05 ? 1 : 2, e.clientX, e.clientY); lastTap = 0; }
+        else lastTap = Date.now();
+      }
+    }
+    box.addEventListener("pointerup", up);
+    box.addEventListener("pointercancel", up);
+    ["gesturestart", "gesturechange"].forEach(function (t) { box.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false }); });
+    box.addEventListener("wheel", function (e) {
+      if (!e.ctrlKey) return;               // trackpad pinch and ctrl + scroll
+      e.preventDefault();
+      setZoom(zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    }, { passive: false });
+  })();
 
   // PNG
   function canvasFor(i, dpi) {
