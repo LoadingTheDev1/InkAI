@@ -388,6 +388,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
         <div class="field"><div class="field-head"><label for="w-gap">Space between words</label><output id="w-gap-out"></output></div><input type="range" id="w-gap" min="0.6" max="5" step="0.1" value="1.5"></div>
         <div class="field"><div class="field-head"><label for="w-lgap">Space between letters</label><output id="w-lgap-out"></output></div><input type="range" id="w-lgap" min="0" max="0.8" step="0.02" value="0.25"></div>
         <div class="field"><div class="field-head"><label for="w-pen">Pen thickness</label><output id="w-pen-out"></output></div><input type="range" id="w-pen" min="0.15" max="0.9" step="0.05" value="0.3"></div>
+        <div class="field"><div class="field-head"><label for="w-press">Pen pressure</label><output id="w-press-out"></output></div><input type="range" id="w-press" min="0" max="1" step="0.05" value="0"><div class="scale-hint"><span>Even, like OneNote</span><span>Real pen</span></div></div>
         <div class="field"><div class="field-head"><label for="w-vary">Letter shape variation</label><output id="w-vary-out"></output></div><input type="range" id="w-vary" min="0" max="1" step="0.05" value="0.5"><div class="scale-hint"><span>Same every time</span><span>Very varied</span></div></div>
         <div class="field"><div class="field-head"><label for="w-mess">Messiness</label><output id="w-mess-out"></output></div><input type="range" id="w-mess" min="0" max="1" step="0.05" value="0.5"><div class="scale-hint"><span>Neat</span><span>Rushed</span></div></div>
         <label class="check"><input type="checkbox" id="w-indent" checked> Indent the first line of each paragraph</label>
@@ -890,6 +891,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
         return o;
       });
     });
+    Object.keys(byKey).forEach(function (ch) {
+      var L = byKey[ch]; if (L.length < 4) return;
+      function stats(f) { var v = L.map(f).sort(function (a, b) { return a - b; }), md = v[Math.floor(v.length / 2)]; var dev = v.map(function (x) { return Math.abs(x - md); }).sort(function (a, b) { return a - b; }); return { md: md, mad: dev[Math.floor(dev.length / 2)] }; }
+      function hOf(g) { var lo = Infinity, hi = -Infinity; g.strokes.forEach(function (s) { s.forEach(function (q) { if (q[1] < lo) lo = q[1]; if (q[1] > hi) hi = q[1]; }); }); return hi - lo; }
+      var H = stats(hOf), Wd = stats(function (g) { return g.w; });
+      var keep = L.filter(function (g) { return Math.abs(hOf(g) - H.md) <= 3.5 * H.mad + 0.2 * H.md && Math.abs(g.w - Wd.md) <= 3.5 * Wd.mad + 0.25 * Wd.md; });
+      if (keep.length >= 3) byKey[ch] = keep;
+    });
     glyphCache = { key: key, byKey: byKey, list: list };
     return glyphCache;
   }
@@ -938,13 +947,39 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     var firstBase = o.paper === "grid" ? Math.ceil((MT + xh * 2.2) / 5) * 5 : MT + xh * 2.4;
     var right = PAGE_W - MR, pages = [[]], lastInst = {}, baseY = firstBase;
     function pick(list, key) { var n = list.length, k = Math.floor(R() * n); if (n > 1 && lastInst[key] === k) k = (k + 1 + Math.floor(R() * (n - 1))) % n; lastInst[key] = k; return list[k]; }
+    var B0 = -2.6, BH = 0.2, NB = 20, TUCK = 0.35;
+    function profile(pts, S, sx) {
+      var L = new Array(NB).fill(Infinity), Rr = new Array(NB).fill(-Infinity);
+      pts.forEach(function (st) {
+        for (var i = 0; i < st.length; i++) {
+          var q = st[i], k = Math.floor((q[1] - B0) / BH);
+          if (k < 0 || k >= NB) continue;
+          var x = q[0] * S * sx;
+          if (x < L[k]) L[k] = x; if (x > Rr[k]) Rr[k] = x;
+        }
+      });
+      return { l: L, r: Rr };
+    }
+    function tuck(prev, cur) {
+      // how far the next letter may slide left before its ink comes as close as the gap allows
+      var need = -Infinity;
+      for (var k = 0; k < NB; k++) {
+        if (cur.prof.l[k] === Infinity) continue;
+        for (var j = Math.max(0, k - 1); j <= Math.min(NB - 1, k + 1); j++) {
+          if (prev.prof.r[j] === -Infinity) continue;
+          need = Math.max(need, prev.x + prev.prof.r[j] - cur.prof.l[k]);
+        }
+      }
+      return need;
+    }
     function makeWord(word) {
       // the hand tires a little over a long text: slightly bigger, looser writing towards the end
       var fat = Math.min(1, charsDone / totalChars), mf = m * (1 + 0.5 * fat);
       var out = [], x = 0, wS = (1 + R.n(0.03) * mf) * (1 + 0.035 * fat * m), wDy = R.n(0.06) * mf * xh, prev = null, prevFill = false;
       var wordShear = R.n(0.04) * m;                                  // each word leans a little its own way
-      var ink = Math.min(0.2, Math.abs(R.n(0.07)) * m);               // pen pressure: some words a touch lighter
-      var wf = Math.max(0.8, Math.min(1.25, 1 + R.n(0.08) * m));      // and a touch thinner or thicker
+      var pr = o.press || 0;
+      var ink = Math.min(0.2, Math.abs(R.n(0.08)) * pr);              // pen pressure: some words a touch lighter
+      var wf = Math.max(0.9, Math.min(1.12, 1 + R.n(0.05) * pr));     // and pressed a touch softer or harder
       Array.from(word.replace(/…/g, "...")).forEach(function (ch) {
         var g = glyphFor(ch, G.byKey);
         if (g && g.skip) return;
@@ -952,12 +987,20 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
         var gi = pick(g.list, g.key), S = xh * wS * (1 + R.n(0.035) * mf), rot = g.rot + R.n(1.6) * mf, wp = warp(gi, wordShear);
         var w = g.rot ? wp.w * S + 1.8 * S * Math.sin(g.rot * Math.PI / 180) : wp.w * S * g.sx;
         var join = !!(o.join && prev !== null && !gi.fill && !prevFill && JOINABLE.test(g.key) && JOINABLE.test(prev));
+        var prof = g.rot ? null : profile(wp.pts, S, g.sx);
         if (prev !== null) {
           var tight = TIGHT_BEFORE.indexOf(g.key) >= 0 || TIGHT_AFTER.indexOf(prev) >= 0;
           var mean = join ? o.lgap * 0.35 : tight ? Math.min(o.lgap, 0.12) : o.lgap, sd = join ? 0.03 * m : tight ? 0.03 : 0.09 * m;
-          x += Math.max(join ? -0.05 : 0, Math.min(1, mean + R.n(sd))) * xh;
+          var gapMM = Math.max(join ? -0.05 : 0, Math.min(1, mean + R.n(sd))) * xh;
+          var last = out[out.length - 1], plain = x + gapMM;
+          x = plain;
+          if (!join && prof && last && last.prof && !tight) {
+            // slide in where the ink leaves room (T|o, r|y, W|a), but at most TUCK x-heights past the plain box spacing
+            var t = tuck(last, { prof: prof });
+            if (t > -Infinity) x = Math.min(plain, Math.max(plain - TUCK * xh, t + Math.max(gapMM, 0.08 * xh) + (gi.fill && last.g.fill ? 0 : o.pen)));   // the pen's width counts too
+          }
         }
-        out.push({ g: gi, pts: wp.pts, x: x, S: S, sx: g.sx, rot: rot, dy: wDy + R.n(0.045) * mf * xh + (g.dy || 0) * S, w: w, ink: Math.max(0, Math.min(0.25, ink + R.n(0.02) * m)), wf: wf, join: join });
+        out.push({ g: gi, prof: prof, pts: wp.pts, x: x, S: S, sx: g.sx, rot: rot, dy: wDy + R.n(0.045) * mf * xh + (g.dy || 0) * S, w: w, ink: Math.max(0, Math.min(0.25, ink + R.n(0.02) * pr)), wf: wf, join: join });
         x += w; prev = g.key; prevFill = !!gi.fill; charsDone++;
       });
       return { glyphs: out, w: x };
@@ -1027,11 +1070,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   }
   function f3(v) { return (Math.round(v * 1000) / 1000).toString(); }
   function f5(v) { return (Math.round(v * 100000) / 100000).toString(); }
-  function pathMM(q) {
-    return q.pts.map(function (st) {
-      return "M" + st.map(function (pt) { var r = mapPoint(q, pt[0], pt[1]); return r[0].toFixed(2) + " " + r[1].toFixed(2); }).join("L") + (q.g.fill ? "Z" : "");
-    }).join("");
-  }
   function mapPoint(p, u, v) { if (p.abs) return [u, v]; var cx = p.w / 2, a = p.rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), lx = u * p.S * p.sx - cx, ly = v * p.S; return [p.x + cx + c * lx - s * ly, p.y + s * lx + c * ly]; }
   function paperLines(o, L) {
     var out = [];
@@ -1041,6 +1079,66 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   }
   function inkOf(o, p) { var base = INK[o.ink], t = p.ink || 0; return base.map(function (v) { return v + (1 - v) * t; }); }
   function penOf(o, p) { return o.pen * (p.S / o.size) * (p.wf || 1); }
+  // What actually goes on the page for one placed glyph, in page mm.
+  // With pen pressure on, a stroke becomes a filled outline: thin where the pen lands and lifts,
+  // a little heavier on downstrokes, like a pressure-sensitive pen. Off = even width, like OneNote.
+  function shapesOf(o, p) {
+    var paths = p.pts.map(function (st) { return st.map(function (q) { return mapPoint(p, q[0], q[1]); }); });
+    if (p.g.fill) return { fill: true, paths: paths };
+    var w = penOf(o, p), pr = o.press || 0;
+    if (pr < 0.05 || p.abs) return { fill: false, w: w, paths: paths };
+    var out = [], seed = p.x * 12.9898 + p.y * 78.233;
+    paths.forEach(function (pts, i) { ribbon(pts, w, pr, seed + i * 3.1, o.join, out); });
+    return { fill: true, paths: out };
+  }
+  function disc(c, r, out) {
+    var pts = [];
+    for (var i = 0; i < 10; i++) { var a = -i * Math.PI / 5; pts.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]); }
+    out.push(pts);
+  }
+  function ribbon(src, w, pr, seed, joined, out) {
+    var P = [src[0]], i;
+    for (i = 1; i < src.length; i++) {
+      var a = P[P.length - 1], b = src[i], d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (d < 0.02) continue;
+      var k = Math.ceil(d / 0.5);                       // enough points for the width to change smoothly
+      for (var j = 1; j <= k; j++) P.push([a[0] + (b[0] - a[0]) * j / k, a[1] + (b[1] - a[1]) * j / k]);
+    }
+    var n = P.length;
+    if (n < 2) { disc(P[0], w * 0.5, out); return; }
+    var s = [0];
+    for (i = 1; i < n; i++) s.push(s[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    var L = s[n - 1];
+    var tip = L < 1 ? 0.85 : 1 - (joined ? 0.25 : 0.55) * pr;       // how thin the pen is where it lands and lifts
+    var tin = Math.min(0.3 * L, 0.8 + 0.5 * w), tout = Math.min(0.4 * L, 1.3 + 0.5 * w);
+    function ease(t) { t = Math.max(0, Math.min(1, t)); return Math.sin(t * Math.PI / 2); }
+    var N = [], W = [];
+    for (i = 0; i < n; i++) {
+      var ia = Math.max(0, i - 1), ib = Math.min(n - 1, i + 1);    // direction over at least ~0.2 mm, so tiny wobbles don't twist the outline
+      while (ia > 0 && s[i] - s[ia] < 0.2) ia--;
+      while (ib < n - 1 && s[ib] - s[i] < 0.2) ib++;
+      var A = P[ia], B = P[ib], dx = B[0] - A[0], dy = B[1] - A[1], dl = Math.hypot(dx, dy) || 1;
+      N.push([-dy / dl, dx / dl]);
+      var e = 1;
+      if (s[i] < tin) e = Math.min(e, tip + (1 - tip) * ease(s[i] / tin));
+      if (L - s[i] < tout) e = Math.min(e, tip + (1 - tip) * ease((L - s[i]) / tout));
+      var f = e * (1 + 0.12 * pr * (dy / dl)) * (1 + 0.05 * pr * Math.sin(seed + s[i] * 0.8));
+      W.push(w * f / 2);
+    }
+    var poly = [];
+    for (i = 0; i < n; i++) poly.push([P[i][0] + N[i][0] * W[i], P[i][1] + N[i][1] * W[i]]);
+    for (i = n - 1; i >= 0; i--) poly.push([P[i][0] - N[i][0] * W[i], P[i][1] - N[i][1] * W[i]]);
+    out.push(poly);
+    disc(P[0], W[0], out); disc(P[n - 1], W[n - 1], out);
+    for (i = 1; i < n - 1; i++) {                       // round off sharp turns
+      var ux = P[i][0] - P[i - 1][0], uy = P[i][1] - P[i - 1][1], vx = P[i + 1][0] - P[i][0], vy = P[i + 1][1] - P[i][1];
+      var cs = (ux * vx + uy * vy) / ((Math.hypot(ux, uy) * Math.hypot(vx, vy)) || 1);
+      if (cs < 0.6) disc(P[i], W[i], out);
+    }
+  }
+  function dOf(sh) {
+    return sh.paths.map(function (st) { return "M" + st.map(function (r) { return r[0].toFixed(2) + " " + r[1].toFixed(2); }).join("L") + (sh.fill ? "Z" : ""); }).join("");
+  }
   function rgbCss(c) { return "rgb(" + c.map(function (v) { return Math.round(v * 255); }).join(",") + ")"; }
 
   // ---------------- write view ----------------
@@ -1048,7 +1146,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
   var current = null;
   function wOpts() {
     return {
-      size: +$("w-size").value, pitch: +$("w-pitch").value, gap: +$("w-gap").value, lgap: +$("w-lgap").value, pen: +$("w-pen").value, mess: +$("w-mess").value, vary: +$("w-vary").value,
+      size: +$("w-size").value, pitch: +$("w-pitch").value, gap: +$("w-gap").value, lgap: +$("w-lgap").value, pen: +$("w-pen").value, mess: +$("w-mess").value, vary: +$("w-vary").value, press: +$("w-press").value,
       indent: $("w-indent").checked, join: $("w-join").checked, paper: document.querySelector("input[name=w-paper]:checked").value,
       ink: document.querySelector("input[name=w-ink]:checked").value, transparent: $("w-transparent").checked
     };
@@ -1061,7 +1159,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
       $("w-gap").value = p.spacing.word; $("w-lgap").value = p.spacing.letter;
     } else if (store.write.o) {
       var so = store.write.o;
-      ["size", "pitch", "gap", "lgap", "pen", "mess", "vary"].forEach(function (k) { if (typeof so[k] === "number") $("w-" + k).value = so[k]; });
+      ["size", "pitch", "gap", "lgap", "pen", "mess", "vary", "press"].forEach(function (k) { if (typeof so[k] === "number") $("w-" + k).value = so[k]; });
       $("w-indent").checked = so.indent !== false; $("w-transparent").checked = !!so.transparent; $("w-join").checked = !!so.join;
       var pp = $("w-paper-" + so.paper); if (pp) pp.checked = true;
       var ik = $("w-ink-" + so.ink); if (ik) ik.checked = true;
@@ -1079,6 +1177,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     $("w-lgap-out").textContent = o.lgap.toFixed(2) + " × letter height";
     $("w-pen-out").textContent = o.pen.toFixed(2) + " mm";
     $("w-mess-out").textContent = messWord(o.mess);
+    $("w-press-out").textContent = o.press < 0.05 ? "Off" : o.press < 0.4 ? "Light" : o.press < 0.75 ? "Medium" : "Strong";
     $("w-vary-out").textContent = o.vary < 0.05 ? "Off" : o.vary < 0.35 ? "Subtle" : o.vary < 0.7 ? "Natural" : "Strong";
     var text = $("w-text").value;
     store.write.text = text; store.write.o = o; persist();
@@ -1098,8 +1197,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
       var s = '<figure class="sheet"><svg viewBox="0 0 210 297" role="img" aria-label="Handwritten page ' + (i + 1) + '"><rect width="210" height="297" fill="#ffffff"/>';
       if (lines.length) s += '<g stroke="' + lineCol + '" stroke-width="0.12">' + lines.map(function (l) { return '<line x1="' + l[0] + '" y1="' + f3(l[1]) + '" x2="' + l[2] + '" y2="' + f3(l[3]) + '"/>'; }).join("") + "</g>";
       s += '<g stroke-linecap="round" stroke-linejoin="round">' + pg.map(function (q) {
-        var col = rgbCss(inkOf(o, q));
-        return q.g.fill ? '<path d="' + pathMM(q) + '" fill="' + col + '" stroke="none"/>' : '<path d="' + pathMM(q) + '" fill="none" stroke="' + col + '" stroke-width="' + f3(penOf(o, q)) + '"/>';
+        var col = rgbCss(inkOf(o, q)), sh = shapesOf(o, q);
+        return sh.fill ? '<path d="' + dOf(sh) + '" fill="' + col + '" stroke="none"/>' : '<path d="' + dOf(sh) + '" fill="none" stroke="' + col + '" stroke-width="' + f3(sh.w) + '"/>';
       }).join("") + "</g>";
       return s + "</svg><figcaption>Page " + (i + 1) + " of " + L.pages.length + "</figcaption></figure>";
     }).join("");
@@ -1189,11 +1288,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     }
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     pg.forEach(function (p) {
+      var sh = shapesOf(o, p);
       ctx.strokeStyle = ctx.fillStyle = rgbCss(inkOf(o, p));
-      ctx.lineWidth = penOf(o, p) * k;
+      if (!sh.fill) ctx.lineWidth = sh.w * k;
       ctx.beginPath();
-      p.pts.forEach(function (s) { s.forEach(function (q, j) { var r = mapPoint(p, q[0], q[1]); if (j) ctx.lineTo(r[0] * k, r[1] * k); else ctx.moveTo(r[0] * k, r[1] * k); }); if (p.g.fill) ctx.closePath(); });
-      if (p.g.fill) ctx.fill(); else ctx.stroke();
+      sh.paths.forEach(function (s) { s.forEach(function (r, j) { if (j) ctx.lineTo(r[0] * k, r[1] * k); else ctx.moveTo(r[0] * k, r[1] * k); }); if (sh.fill) ctx.closePath(); });
+      if (sh.fill) ctx.fill(); else ctx.stroke();
     });
     return cv;
   }
@@ -1207,9 +1307,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     parts.push("1 J 1 j");
     pg.forEach(function (p) {
       var col = inkOf(o, p).map(function (v) { return v.toFixed(3); }).join(" ");
-      var seg = p.g.fill ? [col + " rg"] : [col + " RG " + (penOf(o, p) * MM2PT).toFixed(3) + " w"];
-      p.pts.forEach(function (s) { s.forEach(function (q, j) { var r = mapPoint(p, q[0], q[1]); seg.push(P(r[0], r[1]) + (j ? " l" : " m")); }); if (p.g.fill) seg.push("h"); });
-      seg.push(p.g.fill ? "f" : "S"); parts.push(seg.join("\n"));
+      var sh = shapesOf(o, p), seg = sh.fill ? [col + " rg"] : [col + " RG " + (sh.w * MM2PT).toFixed(3) + " w"];
+      sh.paths.forEach(function (s) { s.forEach(function (r, j) { seg.push(P(r[0], r[1]) + (j ? " l" : " m")); }); if (sh.fill) seg.push("h"); });
+      seg.push(sh.fill ? "f" : "S"); parts.push(seg.join("\n"));
     });
     return parts.join("\n");
   }

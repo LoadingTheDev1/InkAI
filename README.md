@@ -15,8 +15,10 @@
 - **Learns your handwriting.** You write each letter 1–10 times on guide lines, plus one short sentence so it learns your spacing. You can add more samples any time.
 - **Writes anything you type.** Paste text and it's drawn letter by letter from your own samples.
 - **Never looks copy-pasted.** Every letter is picked from your samples at random and slightly reshaped each time. Words lean and press a little differently, lines wander, the last word gets squeezed in at the end of a line, and the writing gets a touch looser over long texts, like a real tired hand.
+- **Natural spacing.** Letters sit as close as their shapes allow, so an o tucks under a T and a y slides in next to an r, like real writing. Samples that went wrong (a slip of the pen) are left out automatically.
+- **Pen pressure.** Off by default for an even line, like OneNote. Turn it up and strokes get thinner where the pen lands and lifts and a bit heavier on downstrokes, and some words come out a touch lighter, like a real pen.
 - **Joined-up writing.** A "Join letters" switch connects the letters inside each word for people whose handwriting is joined.
-- **Lots of settings.** Letter size, line spacing, word and letter spacing, pen thickness, shape variation and messiness.
+- **Lots of settings.** Letter size, line spacing, word and letter spacing, pen thickness, pen pressure, shape variation and messiness.
 - **Paper and ink.** Blank, lined or squared 5 mm paper, in black, royal blue or pencil.
 - **Export.** Vector PDF, PNG (optionally transparent), or copy the page straight into OneNote, GoodNotes or Notes.
 - **Several people.** Each person gets their own handwriting, and you can save it as a file to back it up or move it to another device.
@@ -49,7 +51,9 @@ InkAI doesn't need a cloud AI. It learns from your own samples:
 1. Every letter you write is stored as pen strokes, measured against the guide lines, so size and baseline are consistent.
 2. When writing, each character picks one of your samples at random, avoiding the one it used last time.
 3. Each copy is reshaped a little (stretch, slant and a gentle wave) and placed with natural jitter in size, height, rotation, letter gaps and word gaps. Each line gets its own slight slope.
-4. The page is drawn as vectors, so PDFs stay sharp at any zoom.
+4. Letters are spaced by their actual ink, not by boxes around them, so shapes like T, W, Y, f and r let the next letter slide in closer.
+5. With pen pressure on, every stroke is drawn as an outline that tapers where the pen lands and lifts.
+6. The page is drawn as vectors, so PDFs stay sharp at any zoom.
 
 It works best for print handwriting, where letters aren't joined.
 
