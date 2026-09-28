@@ -14,7 +14,8 @@
 
 - **Learns your handwriting.** You write each letter 1–10 times on guide lines, plus one short sentence so it learns your spacing. You can add more samples any time.
 - **Writes anything you type.** Paste text and it's drawn letter by letter from your own samples.
-- **Never looks copy-pasted.** Every letter is picked from your samples at random and slightly reshaped each time, with small changes in size, tilt, spacing and line slope.
+- **Never looks copy-pasted.** Every letter is picked from your samples at random and slightly reshaped each time. Words lean and press a little differently, lines wander, the last word gets squeezed in at the end of a line, and the writing gets a touch looser over long texts, like a real tired hand.
+- **Joined-up writing.** A "Join letters" switch connects the letters inside each word for people whose handwriting is joined.
 - **Lots of settings.** Letter size, line spacing, word and letter spacing, pen thickness, shape variation and messiness.
 - **Paper and ink.** Blank, lined or squared 5 mm paper, in black, royal blue or pencil.
 - **Export.** Vector PDF, PNG (optionally transparent), or copy the page straight into OneNote, GoodNotes or Notes.
@@ -74,6 +75,12 @@ Then open `http://localhost:8000`. To publish your own copy, fork the repo and t
 ## Credits
 
 Made by **Emre** ([@LoadingTheDev1](https://github.com/LoadingTheDev1)).
+
+## Special thanks
+
+- Ata Demirdirek
+- Doruk Ege Tekeoğlu
+- Ataberk Cesur
 
 ## License
 
