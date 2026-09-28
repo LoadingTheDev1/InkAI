@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>InkAI</title>
+<meta name="description" content="Teach InkAI your handwriting once, then type anything and get it back handwritten. Works offline on iPad.">
+<meta name="theme-color" content="#0B6B5C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="InkAI">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; -webkit-text-size-adjust: 100%; }
+img { max-width: 100%; }
+.pad canvas, .sentence-line canvas { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+:root {
+  --bg: #EDF0F1;
+  --surface: #FFFFFF;
+  --surface-2: #F3F5F6;
+  --text: #14181C;
+  --muted: #58616B;
+  --line: #D1D7DC;
+  --accent: #0B6B5C;
+  --accent-soft: #DCEEE9;
+  --accent-ink: #FFFFFF;
+  --warn-bg: #FFF3D6;
+  --warn-text: #664700;
+  --danger: #B42318;
+  --guide: #B8C2CA;
+  --guide-strong: #7E8A95;
+  --pad-ink: #111418;
+  --pad-bg: #FFFFFF;
+  --sheet-shadow: 0 1px 2px rgba(18, 26, 32, .06), 0 10px 28px rgba(18, 26, 32, .10);
+  --radius: 10px;
+  --display: "Familjen Grotesk", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0E1113;
+    --surface: #171B1F;
+    --surface-2: #1D2227;
+    --text: #E3E8EA;
+    --muted: #97A2A8;
+    --line: #293137;
+    --accent: #5CC9B3;
+    --accent-soft: #15322C;
+    --accent-ink: #062A23;
+    --warn-bg: #3A2E10;
+    --warn-text: #F4D58A;
+    --danger: #FF8A7E;
+    --guide: #3A444C;
+    --guide-strong: #6C7883;
+    --pad-ink: #EEF2F3;
+    --pad-bg: #12161A;
+    --sheet-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E1113;
+  --surface: #171B1F;
+  --surface-2: #1D2227;
+  --text: #E3E8EA;
+  --muted: #97A2A8;
+  --line: #293137;
+  --accent: #5CC9B3;
+  --accent-soft: #15322C;
+  --accent-ink: #062A23;
+  --warn-bg: #3A2E10;
+  --warn-text: #F4D58A;
+  --danger: #FF8A7E;
+  --guide: #3A444C;
+  --guide-strong: #6C7883;
+  --pad-ink: #EEF2F3;
+  --pad-bg: #12161A;
+  --sheet-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .45);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 16px 40px; }
+.wrap { max-width: 1320px; margin-inline: auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.brand { display: grid; gap: 2px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 4vw, 32px); letter-spacing: -0.015em; line-height: 1.05; margin: 0; }
+.tagline { margin: 0; color: var(--muted); font-size: 14px; }
+.pitch { margin: 2px 0 0; max-width: 62ch; font-size: 15px; font-style: italic; color: var(--text); }
+.brand { max-width: 720px; }
+nav.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; flex-wrap: wrap; }
+nav.tabs button { border: 0; background: transparent; border-radius: 999px; padding: 8px 16px; font: 700 14px/1 var(--body); color: var(--muted); cursor: pointer; }
+nav.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.who { font-size: 13px; color: var(--muted); }
+.who b { color: var(--text); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.section { padding: 16px 18px; display: grid; gap: 12px; }
+.section + .section { border-top: 1px solid var(--line); }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 22px; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+button, .btn {
+  font: 700 14px/1 var(--body); border-radius: 8px; padding: 10px 14px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.danger { color: var(--danger); }
+button.ghost { background: transparent; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .file-label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+input[type=text], select, textarea {
+  font: 15px/1.4 var(--body); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+}
+input[type=text] { width: 100%; }
+textarea { width: 100%; min-height: 170px; resize: vertical; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 16px; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+.warn { font-size: 13px; background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 8px 10px; }
+.warn code { font-family: var(--body); font-weight: 700; letter-spacing: .1em; }
+
+/* setup */
+.setup { max-width: 720px; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { background: var(--surface-2); border-radius: 8px; padding: 12px; display: grid; gap: 4px; }
+.step b { font-family: var(--display); font-size: 16px; }
+.step span { font-size: 13px; color: var(--muted); }
+
+/* teach */
+.teach { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 280px); gap: 18px; align-items: start; }
+@media (max-width: 960px) { .teach { grid-template-columns: minmax(0, 1fr); } }
+.prompt { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.target {
+  font-family: var(--body); font-size: 56px; line-height: 1; min-width: 72px; height: 72px; padding-inline: 10px;
+  display: grid; place-items: center; background: var(--accent-soft); color: var(--text); border-radius: 12px;
+}
+.prompt-text { display: grid; gap: 2px; }
+.prompt-text h2 { font-size: 20px; }
+.pads { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 560px) { .pads { grid-template-columns: repeat(var(--nc, 2), minmax(0, 1fr)); } }
+.pad { position: relative; }
+.pad canvas, .sentence-line canvas { display: block; width: 100%; touch-action: none; background: var(--pad-bg); border: 1px solid var(--line); border-radius: 8px; cursor: crosshair; }
+.pad .clear-one { position: absolute; top: 6px; right: 6px; padding: 5px 8px; font-size: 12px; background: var(--surface); opacity: .85; }
+.pad-num { position: absolute; left: 8px; top: 6px; font-size: 11px; color: var(--muted); pointer-events: none; }
+.teach-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+.teach-actions .row:last-child { margin-left: auto; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.grid-chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
+.grid-chars button {
+  padding: 0; height: 34px; justify-content: center; font: 400 17px/1 var(--body); border-radius: 6px; background: var(--surface-2); border-color: transparent; color: var(--muted);
+}
+.grid-chars button.done { background: var(--accent-soft); color: var(--text); }
+.grid-chars button.current { border-color: var(--accent); color: var(--text); font-weight: 700; }
+.grid-group { display: grid; gap: 6px; }
+.grid-group h3 { font-size: 12px; margin: 0; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.sentence-pads { display: grid; gap: 10px; }
+.sentence-line { display: grid; gap: 4px; }
+.sentence-line span { font-size: 14px; color: var(--muted); }
+
+/* write */
+.write { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .write { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 901px) { .write .panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow: auto; } }
+.field { display: grid; gap: 4px; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; }
+.field-head output { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+.scale-hint { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0; }
+.seg legend { font-size: 14px; margin-bottom: 6px; padding: 0; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; background: var(--surface); cursor: pointer; user-select: none; }
+.seg input:checked + span { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
+.preview { display: grid; gap: 18px; justify-items: center; min-width: 0; }
+.preview-head { width: 100%; max-width: 780px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.sheet { width: 100%; max-width: 780px; display: grid; gap: 6px; margin: 0; }
+.sheet svg { display: block; width: 100%; height: auto; background: #fff; box-shadow: var(--sheet-shadow); border-radius: 2px; }
+.sheet figcaption { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.empty { max-width: 560px; padding: 24px; display: grid; gap: 12px; }
+
+/* people */
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.person { padding: 16px; display: grid; gap: 10px; align-content: start; }
+.person.active { border-color: var(--accent); }
+.person h3 { font-family: var(--display); font-size: 20px; margin: 0; }
+.person .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.file-label { position: relative; overflow: hidden; }
+.file-label input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>InkAI</h1>
+      <p class="pitch">Are u a lazy bum who can't even write his own homework or perhaps an insanely smart fellow who just happens to have sweaty hands? Well either way InkAI is for you.</p>
+      <p class="tagline">Teach it your letters once. Then type anything and get it back in your handwriting.</p>
+    </div>
+    <div class="row">
+      <span class="who" id="who"></span>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button type="button" role="tab" id="tab-teach" aria-selected="true" data-view="teach">Teach</button>
+        <button type="button" role="tab" id="tab-write" aria-selected="false" data-view="write">Write</button>
+        <button type="button" role="tab" id="tab-people" aria-selected="false" data-view="people">Handwritings</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- SETUP -->
+  <section id="view-setup" class="card setup" hidden>
+    <div class="section">
+      <p class="eyebrow">New handwriting</p>
+      <h2>Whose handwriting is this?</h2>
+      <div class="steps">
+        <div class="step"><b>1. Teach</b><span>Write each letter a few times on the guide lines. A pen or stylus works best.</span></div>
+        <div class="step"><b>2. Write</b><span>Type or paste any text. Each letter is drawn from your own samples.</span></div>
+        <div class="step"><b>3. Export</b><span>Download a PDF or PNG, or copy the page straight into your notes.</span></div>
+      </div>
+    </div>
+    <form class="section" id="setup-form">
+      <label class="field"><span>Name</span><input type="text" id="setup-name" maxlength="40" placeholder="For example: Lena" required></label>
+      <fieldset class="field" style="border:0;padding:0;margin:0">
+        <legend style="font-size:14px;margin-bottom:6px">Characters to teach</legend>
+        <div class="checks" id="setup-sets"></div>
+      </fieldset>
+      <label class="field" for="setup-per">
+        <span>Samples of each character</span>
+        <select id="setup-per">
+          <option value="1">1 (fastest, looks repetitive)</option>
+          <option value="2">2</option>
+          <option value="3" selected>3 (recommended)</option>
+          <option value="4">4</option>
+          <option value="5">5 (most natural)</option>
+        </select>
+      </label>
+      <p class="small muted" id="setup-estimate"></p>
+      <div class="row"><button type="submit" class="primary" id="setup-start">Start teaching</button><button type="button" class="ghost" id="setup-cancel" hidden>Cancel</button></div>
+      <p class="small muted">Works best for print handwriting, where letters aren't joined. Everything stays in this browser until you save a handwriting file.</p>
+    </form>
+  </section>
+
+  <!-- TEACH -->
+  <section id="view-teach" class="teach" hidden>
+    <div class="card">
+      <div class="section" id="capture">
+        <div class="prompt">
+          <div class="target" id="target" aria-hidden="true">a</div>
+          <div class="prompt-text">
+            <h2 id="prompt-title">Write “a” 3 times</h2>
+            <p class="muted small" id="prompt-hint"></p>
+          </div>
+        </div>
+        <div class="pads" id="pads"></div>
+        <div class="teach-actions">
+          <div class="row">
+            <button type="button" id="btn-back">Back</button>
+            <button type="button" id="btn-undo">Undo stroke</button>
+            <button type="button" id="btn-clear">Clear all</button>
+          </div>
+          <div class="row">
+            <button type="button" class="ghost" id="btn-skip">Skip</button>
+            <button type="button" class="primary" id="btn-next">Save and next</button>
+          </div>
+        </div>
+        <p class="status" id="teach-status" role="status" aria-live="polite"></p>
+      </div>
+      <div class="section" id="sentence" hidden>
+        <p class="eyebrow">Last step: spacing</p>
+        <h2>Write this sentence the way you normally would</h2>
+        <p class="muted small">This teaches the gaps between your letters and words. Write each half on its own line.</p>
+        <div class="sentence-pads" id="sentence-pads"></div>
+        <div class="teach-actions">
+          <div class="row"><button type="button" id="sent-clear">Clear</button><button type="button" id="sent-undo">Undo stroke</button></div>
+          <div class="row"><button type="button" class="ghost" id="sent-skip">Skip, use normal spacing</button><button type="button" class="primary" id="sent-save">Save spacing</button></div>
+        </div>
+        <p class="status" id="sent-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <aside class="card">
+      <div class="section">
+        <div class="row" style="justify-content:space-between"><p class="eyebrow">Progress</p><span class="small muted" id="progress-text"></span></div>
+        <div class="progress"><i id="progress-bar" style="width:0%"></i></div>
+        <div id="char-grid" style="display:grid;gap:12px"></div>
+        <div class="row">
+          <button type="button" id="goto-sentence">Teach spacing</button>
+          <button type="button" id="goto-write">Start writing</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- WRITE -->
+  <section id="view-write" class="write" hidden>
+    <form class="card panel" id="write-form" autocomplete="off">
+      <div class="section">
+        <div class="row" style="justify-content:space-between"><label class="eyebrow" for="w-text">Your text</label><span class="small muted" id="w-count"></span></div>
+        <textarea id="w-text" spellcheck="false"></textarea>
+        <p class="warn" id="w-missing" hidden></p>
+      </div>
+      <div class="section">
+        <p class="eyebrow">Writing</p>
+        <div class="field"><div class="field-head"><label for="w-size">Letter size (x-height)</label><output id="w-size-out"></output></div><input type="range" id="w-size" min="1.4" max="6" step="0.1" value="2.5"></div>
+        <div class="field"><div class="field-head"><label for="w-pitch">Line spacing</label><output id="w-pitch-out"></output></div><input type="range" id="w-pitch" min="5" max="18" step="0.5" value="8"></div>
+        <div class="field"><div class="field-head"><label for="w-gap">Space between words</label><output id="w-gap-out"></output></div><input type="range" id="w-gap" min="0.6" max="5" step="0.1" value="1.5"></div>
+        <div class="field"><div class="field-head"><label for="w-lgap">Space between letters</label><output id="w-lgap-out"></output></div><input type="range" id="w-lgap" min="0" max="0.8" step="0.02" value="0.25"></div>
+        <div class="field"><div class="field-head"><label for="w-pen">Pen thickness</label><output id="w-pen-out"></output></div><input type="range" id="w-pen" min="0.15" max="0.9" step="0.05" value="0.3"></div>
+        <div class="field"><div class="field-head"><label for="w-vary">Letter shape variation</label><output id="w-vary-out"></output></div><input type="range" id="w-vary" min="0" max="1" step="0.05" value="0.5"><div class="scale-hint"><span>Same every time</span><span>Very varied</span></div></div>
+        <div class="field"><div class="field-head"><label for="w-mess">Messiness</label><output id="w-mess-out"></output></div><input type="range" id="w-mess" min="0" max="1" step="0.05" value="0.5"><div class="scale-hint"><span>Neat</span><span>Rushed</span></div></div>
+        <label class="check"><input type="checkbox" id="w-indent" checked> Indent the first line of each paragraph</label>
+      </div>
+      <div class="section">
+        <p class="eyebrow">Paper and ink</p>
+        <fieldset class="seg"><legend>Paper</legend>
+          <label><input type="radio" name="w-paper" id="w-paper-blank" value="blank" checked><span>Blank</span></label>
+          <label><input type="radio" name="w-paper" id="w-paper-lined" value="lined"><span>Lined</span></label>
+          <label><input type="radio" name="w-paper" id="w-paper-grid" value="grid"><span>Squared 5 mm</span></label>
+        </fieldset>
+        <fieldset class="seg"><legend>Ink</legend>
+          <label><input type="radio" name="w-ink" id="w-ink-black" value="black" checked><span><i class="swatch" style="background:#141414"></i>Black</span></label>
+          <label><input type="radio" name="w-ink" id="w-ink-blue" value="blue"><span><i class="swatch" style="background:#1F3DB5"></i>Royal blue</span></label>
+          <label><input type="radio" name="w-ink" id="w-ink-pencil" value="pencil"><span><i class="swatch" style="background:#55565E"></i>Pencil</span></label>
+        </fieldset>
+      </div>
+      <div class="section">
+        <p class="eyebrow">Get the page</p>
+        <div class="row"><button type="button" id="w-reroll">New variation</button><button type="button" class="primary" id="w-pdf">Save PDF</button></div>
+        <div class="row"><label for="w-page" class="small muted">PNG of</label><select id="w-page"></select><button type="button" id="w-png">Save PNG</button><button type="button" id="w-copy">Copy image</button></div>
+        <label class="check"><input type="checkbox" id="w-transparent"> Transparent background for PNG and copy</label>
+        <p class="status" id="w-status" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+    <section class="preview" aria-label="Preview">
+      <div class="preview-head"><span id="w-pages-count"></span><span>A4 · each letter picked from your samples</span></div>
+      <div id="w-pages" class="preview"></div>
+    </section>
+  </section>
+
+  <!-- PEOPLE -->
+  <section id="view-people" hidden>
+    <div class="row" style="margin-bottom:14px">
+      <button type="button" class="primary" id="p-new">New handwriting</button>
+      <label class="btn file-label">Load a handwriting file<input type="file" id="p-load" accept=".json,application/json"></label>
+      <span class="status" id="p-status" role="status" aria-live="polite"></span>
+    </div>
+    <div class="people" id="people"></div>
+  </section>
+</div>
+
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------------- character sets ----------------
+  var SETS = [
+    { id: "lower", label: "Lowercase a–z", chars: "abcdefghijklmnopqrstuvwxyz", required: true },
+    { id: "upper", label: "Capitals A–Z", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
+    { id: "digits", label: "Digits 0–9", chars: "0123456789" },
+    { id: "punct", label: "Punctuation . , ; : ! ? ' \" ( ) -", chars: ".,;:!?'\"()-" },
+    { id: "german", label: "German ä ö ü ß „", chars: "äöüßÄÖÜ„" },
+    { id: "turkish", label: "Turkish ç ğ ı ş İ", chars: "çğışÇĞİŞ" }
+  ];
+  var NAMES = { "l": "lowercase L", "I": "capital i", "i": "lowercase i", "1": "the digit one", "0": "the digit zero", "O": "capital O", "o": "lowercase o",
+    ".": "a full stop", ",": "a comma", ";": "a semicolon", ":": "a colon", "!": "an exclamation mark", "?": "a question mark", "'": "an apostrophe",
+    "\"": "quotation marks", "(": "an opening bracket", ")": "a closing bracket", "-": "a hyphen", "„": "German low quotes „", "ı": "dotless ı",
+    "İ": "capital İ with a dot", "ß": "sharp s ß" };
+  var DESC = "gjpqyçşğ,;„";
+  var NOT_ON_BASELINE = "gjpqyçşğÇŞ,;'\"-„()";
+  function charsFor(sets) {
+    var s = "";
+    SETS.forEach(function (st) { if (sets.indexOf(st.id) >= 0) s += st.chars; });
+    if (sets.indexOf("turkish") >= 0 && sets.indexOf("german") < 0) s += "öüÖÜ";
+    return Array.from(new Set(Array.from(s)));
+  }
+  function setOf(ch, sets) {
+    for (var i = 0; i < SETS.length; i++) if (SETS[i].chars.indexOf(ch) >= 0 && (!sets || sets.indexOf(SETS[i].id) >= 0)) return SETS[i].id;
+    return "turkish";
+  }
+  function hintFor(ch) {
+    if (".,;:!?'\"()-„".indexOf(ch) >= 0) return "Write it where it sits in a sentence: commas dip below the baseline, quotes sit up high.";
+    if (DESC.indexOf(ch) >= 0) return "Sit the body on the baseline and let the tail hang below it.";
+    if (/[A-ZÄÖÜÇĞİŞ0-9]/.test(ch)) return "Stand it on the baseline. The dotted top line is a guide for tall letters.";
+    return "Sit it on the solid baseline. The dashed line shows the height of a small x.";
+  }
+
+  // ---------------- storage ----------------
+  var KEY = "inkai-v1", OLD_KEY = "letterhand-v1", askedPersist = false;
+  var store = { profiles: {}, active: null, write: null };
+  var storageOk = true;
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
+      var s = JSON.parse(raw || "null"); if (s && s.profiles) store = s;
+    } catch (e) { storageOk = false; }
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); storageOk = true; } catch (e) { storageOk = false; }
+    if (!askedPersist && Object.keys(store.profiles).length && navigator.storage && navigator.storage.persist) {
+      askedPersist = true;
+      try { navigator.storage.persist().catch(function () {}); } catch (e) { /* not supported */ }
+    }
+  }
+  function active() { return store.active ? store.profiles[store.active] : null; }
+  function uid() { return "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
+  function taughtCount(p) { return charsFor(p.sets).filter(function (c) { return p.glyphs[c] && p.glyphs[c].length; }).length; }
+
+  // ---------------- writing pad ----------------
+  var penSeen = false;
+  var undoStack = [];
+  function Pad(opts) {
+    var self = this;
+    this.wu = opts.wu; this.top = 2.4; this.bottom = 1.2;
+    this.strokes = [];
+    this.cv = document.createElement("canvas");
+    this.cv.setAttribute("aria-label", opts.label || "Writing pad");
+    this.cv.setAttribute("role", "img");
+    this.ctx = this.cv.getContext("2d");
+    this.onchange = opts.onchange || function () {};
+    var cur = null, pid = null;
+    function pos(e) {
+      var r = self.cv.getBoundingClientRect(); var k = r.width / self.wu;
+      return [(e.clientX - r.left) / k, (e.clientY - r.top) / k - self.top];
+    }
+    this.cv.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "pen") penSeen = true;
+      if (penSeen && e.pointerType === "touch") return;
+      if (e.button > 0) return;
+      e.preventDefault();
+      pid = e.pointerId; try { self.cv.setPointerCapture(pid); } catch (x) {}
+      cur = [pos(e)]; self.strokes.push(cur); self.draw();
+    });
+    this.cv.addEventListener("pointermove", function (e) {
+      if (!cur || e.pointerId !== pid) return;
+      e.preventDefault();
+      var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      if (!evs.length) evs = [e];
+      evs.forEach(function (ev) { cur.push(pos(ev)); });
+      self.draw();
+    });
+    function end(e) {
+      if (!cur || (e && e.pointerId !== pid)) return;
+      if (cur.length === 1) cur.push([cur[0][0] + 0.012, cur[0][1] + 0.004]);
+      cur = null; pid = null; undoStack.push(self); self.draw(); self.onchange();
+    }
+    if (typeof ResizeObserver !== "undefined") {
+      var lastW = 0;
+      new ResizeObserver(function (en) { var w = en[0].contentRect.width; if (w > 0 && Math.abs(w - lastW) > 1) { lastW = w; self.size(); } }).observe(this.cv);
+    }
+    this.cv.addEventListener("pointerup", end);
+    this.cv.addEventListener("pointercancel", end);
+    this.cv.addEventListener("lostpointercapture", end);
+  }
+  Pad.prototype.size = function () {
+    var w = this.cv.clientWidth || this.cv.parentNode.clientWidth || 300;
+    var k = w / this.wu, h = (this.top + this.bottom) * k, dpr = window.devicePixelRatio || 1;
+    this.cv.style.height = h + "px";
+    this.cv.width = Math.round(w * dpr); this.cv.height = Math.round(h * dpr);
+    this.k = k; this.dpr = dpr; this.draw();
+  };
+  Pad.prototype.draw = function () {
+    var c = this.ctx, k = this.k || 50, d = this.dpr || 1, cs = getComputedStyle(document.documentElement);
+    if (!this.k) return;
+    c.setTransform(d, 0, 0, d, 0, 0);
+    c.clearRect(0, 0, this.cv.width, this.cv.height);
+    var W = this.wu * k, yb = this.top * k, top = this.top;
+    function hline(y, color, dash, lw) { c.beginPath(); c.setLineDash(dash); c.strokeStyle = color; c.lineWidth = lw; c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+    var g = cs.getPropertyValue("--guide").trim() || "#bbb", gs = cs.getPropertyValue("--guide-strong").trim() || "#888";
+    hline(yb - 1.8 * k, g, [2, 5], 1);
+    hline(yb - 1.0 * k, g, [7, 6], 1.2);
+    hline(yb, gs, [], 1.5);
+    hline(yb + 0.8 * k, g, [2, 5], 1);
+    c.setLineDash([]);
+    c.strokeStyle = cs.getPropertyValue("--pad-ink").trim() || "#111";
+    c.lineWidth = Math.max(2, 0.09 * k); c.lineCap = "round"; c.lineJoin = "round";
+    this.strokes.forEach(function (s) {
+      c.beginPath();
+      s.forEach(function (p, i) { var x = p[0] * k, y = (p[1] + top) * k; if (i) c.lineTo(x, y); else c.moveTo(x, y); });
+      c.stroke();
+    });
+  };
+  Pad.prototype.clear = function () { this.strokes = []; var me = this; undoStack = undoStack.filter(function (p) { return p !== me; }); this.draw(); this.onchange(); };
+  Pad.prototype.set = function (strokes) { this.strokes = strokes.map(function (s) { return s.map(function (p) { return p.slice(); }); }); this.draw(); };
+  function undo() { var p = undoStack.pop(); if (p && p.strokes.length) { p.strokes.pop(); p.draw(); p.onchange(); } }
+
+  // stroke processing
+  function smooth(s) {
+    if (s.length < 3) return s;
+    var o = [s[0]];
+    for (var i = 1; i < s.length - 1; i++) o.push([(s[i - 1][0] + 2 * s[i][0] + s[i + 1][0]) / 4, (s[i - 1][1] + 2 * s[i][1] + s[i + 1][1]) / 4]);
+    o.push(s[s.length - 1]);
+    return o;
+  }
+  function rdp(pts, eps) {
+    if (pts.length < 3) return pts;
+    var a = pts[0], b = pts[pts.length - 1], dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy), mi = 0, md = 0;
+    for (var i = 1; i < pts.length - 1; i++) {
+      var d = n < 1e-9 ? Math.hypot(pts[i][0] - a[0], pts[i][1] - a[1]) : Math.abs(dx * (pts[i][1] - a[1]) - dy * (pts[i][0] - a[0])) / n;
+      if (d > md) { md = d; mi = i; }
+    }
+    if (md > eps) return rdp(pts.slice(0, mi + 1), eps).slice(0, -1).concat(rdp(pts.slice(mi), eps));
+    return [a, b];
+  }
+  function packStrokes(strokes) {
+    return strokes.map(function (s) {
+      var p = rdp(smooth(s), 0.01), flat = [];
+      p.forEach(function (q) { flat.push(Math.round(q[0] * 100), Math.round(q[1] * 100)); });
+      if (flat.length === 2) flat.push(flat[0] + 1, flat[1]);
+      return flat;
+    });
+  }
+  function unpack(flat) { var o = []; for (var i = 0; i < flat.length; i += 2) o.push([flat[i] / 100, flat[i + 1] / 100]); return o; }
+
+  // ---------------- teach view ----------------
+  var teach = { idx: 0, pads: [], sentencePads: [] };
+  function teachChars() { var p = active(); return p ? charsFor(p.sets) : []; }
+  function buildPads() {
+    var p = active(), n = p.per, box = $("pads");
+    box.style.setProperty("--n", n); box.style.setProperty("--nc", Math.min(n, 2));
+    box.innerHTML = "";
+    teach.pads = [];
+    undoStack = [];
+    for (var i = 0; i < n; i++) {
+      var wrap = document.createElement("div"); wrap.className = "pad";
+      var pad = new Pad({ wu: 3.0, label: "Writing box " + (i + 1) });
+      var num = document.createElement("span"); num.className = "pad-num"; num.textContent = String(i + 1);
+      var cl = document.createElement("button"); cl.type = "button"; cl.className = "clear-one"; cl.textContent = "Clear"; cl.setAttribute("aria-label", "Clear box " + (i + 1));
+      (function (pad) { cl.addEventListener("click", function () { pad.clear(); }); })(pad);
+      wrap.appendChild(pad.cv); wrap.appendChild(num); wrap.appendChild(cl);
+      box.appendChild(wrap);
+      teach.pads.push(pad);
+    }
+    requestAnimationFrame(function () { teach.pads.forEach(function (pd) { pd.size(); }); });
+  }
+  function showChar(i) {
+    var chars = teachChars(); if (!chars.length) return;
+    teach.idx = Math.max(0, Math.min(chars.length - 1, i));
+    var ch = chars[teach.idx], p = active();
+    $("capture").hidden = false; $("sentence").hidden = true;
+    if (teach.pads.length !== p.per) buildPads();
+    $("target").textContent = ch;
+    var nm = NAMES[ch] ? " (" + NAMES[ch] + ")" : "";
+    $("prompt-title").textContent = "Write “" + ch + "”" + nm + " " + p.per + (p.per === 1 ? " time" : " times");
+    $("prompt-hint").textContent = hintFor(ch) + (p.per > 1 ? " One in each box, a little different each time is fine." : "");
+    var have = p.glyphs[ch] || [];
+    var fromSheet = have.length && !have[0].s;
+    teach.pads.forEach(function (pd, k) { pd.set(have[k] && have[k].s ? have[k].s.map(unpack) : []); });
+    undoStack = [];
+    $("teach-status").textContent = fromSheet ? "Taught from a sample sheet. Write new ones here to replace them." : have.length ? "Already taught. Clear a box and rewrite it to change it." : "";
+    $("btn-back").disabled = teach.idx === 0;
+    renderGrid();
+  }
+  function saveCurrent() {
+    var chars = teachChars(), ch = chars[teach.idx], p = active();
+    var samples = teach.pads.filter(function (pd) { return pd.strokes.length; }).map(function (pd) { return { s: packStrokes(pd.strokes) }; });
+    if (!samples.length) return false;
+    p.glyphs[ch] = samples; p.updated = Date.now();
+    persist();
+    return true;
+  }
+  function nextMissing(from) {
+    var chars = teachChars(), p = active();
+    for (var j = 1; j <= chars.length; j++) { var k = (from + j) % chars.length; if (!(p.glyphs[chars[k]] || []).length) return k; }
+    return -1;
+  }
+  function advance() {
+    var k = nextMissing(teach.idx);
+    if (k === -1) {
+      if (!active().spacing.learned) showSentence();
+      else { $("teach-status").textContent = "Every character is taught. Head to Write."; renderGrid(); }
+    } else showChar(k);
+  }
+  $("btn-next").addEventListener("click", function () {
+    if (!saveCurrent()) { $("teach-status").textContent = "Write the character in at least one box first, or press Skip."; return; }
+    advance();
+  });
+  $("btn-skip").addEventListener("click", function () { var chars = teachChars(); showChar((teach.idx + 1) % chars.length); });
+  $("btn-back").addEventListener("click", function () { showChar(teach.idx - 1); });
+  $("btn-undo").addEventListener("click", undo);
+  $("btn-clear").addEventListener("click", function () { teach.pads.forEach(function (pd) { pd.clear(); }); });
+
+  function renderGrid() {
+    var p = active(); if (!p) return;
+    var chars = charsFor(p.sets), done = taughtCount(p);
+    $("progress-text").textContent = done + " of " + chars.length + " characters" + (p.spacing.learned ? " · spacing learned" : "");
+    $("progress-bar").style.width = (chars.length ? 100 * done / chars.length : 0) + "%";
+    var groups = {};
+    chars.forEach(function (c, i) { var g = setOf(c, p.sets); (groups[g] = groups[g] || []).push([c, i]); });
+    var html = "";
+    SETS.forEach(function (st) {
+      if (!groups[st.id]) return;
+      html += '<div class="grid-group"><h3>' + st.label.split(" ")[0] + '</h3><div class="grid-chars">';
+      groups[st.id].forEach(function (ci) {
+        var c = ci[0], i = ci[1], isDone = (p.glyphs[c] || []).length, cur = i === teach.idx && !$("capture").hidden;
+        html += '<button type="button" data-i="' + i + '" class="' + (isDone ? "done " : "") + (cur ? "current" : "") + '" aria-label="' + esc((NAMES[c] || c) + (isDone ? ", taught" : ", not taught yet")) + '">' + esc(c) + "</button>";
+      });
+      html += "</div></div>";
+    });
+    $("char-grid").innerHTML = html;
+  }
+  $("char-grid").addEventListener("click", function (e) { var b = e.target.closest("button[data-i]"); if (b) showChar(+b.dataset.i); });
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]; }); }
+
+  // spacing sentence
+  var SENT = ["The quick brown fox jumps", "over the lazy dog."];
+  function showSentence() {
+    $("capture").hidden = true; $("sentence").hidden = false;
+    var box = $("sentence-pads"); box.innerHTML = ""; teach.sentencePads = []; undoStack = [];
+    SENT.forEach(function (line, i) {
+      var w = document.createElement("div"); w.className = "sentence-line";
+      var lab = document.createElement("span"); lab.textContent = line;
+      var pad = new Pad({ wu: 22, label: "Sentence line " + (i + 1) });
+      w.appendChild(lab); w.appendChild(pad.cv); box.appendChild(w); teach.sentencePads.push(pad);
+    });
+    requestAnimationFrame(function () { teach.sentencePads.forEach(function (pd) { pd.size(); }); });
+    $("sent-status").textContent = "";
+    renderGrid();
+  }
+  function learnSpacing() {
+    var letterG = [], wordG = [];
+    teach.sentencePads.forEach(function (pd, li) {
+      var iv = pd.strokes.map(function (s) { var xs = s.map(function (p) { return p[0]; }); return [Math.min.apply(null, xs), Math.max.apply(null, xs)]; }).sort(function (a, b) { return a[0] - b[0]; });
+      var comps = [];
+      iv.forEach(function (v) { var l = comps[comps.length - 1]; if (l && v[0] < l[1] + 0.04) l[1] = Math.max(l[1], v[1]); else comps.push(v.slice()); });
+      var gaps = []; for (var i = 1; i < comps.length; i++) gaps.push(comps[i][0] - comps[i - 1][1]);
+      var nWord = SENT[li].split(" ").length - 1;
+      var sorted = gaps.slice().sort(function (a, b) { return b - a; });
+      sorted.forEach(function (g, i) { (i < nWord ? wordG : letterG).push(g); });
+    });
+    var sc = profileScale(active());
+    function med(a) { if (!a.length) return null; a = a.slice().sort(function (x, y) { return x - y; }); return a[Math.floor(a.length / 2)]; }
+    var lg = med(letterG), wg = med(wordG);
+    if (lg === null || wg === null || wordG.length < 3) return null;
+    return { letter: Math.max(0.02, Math.min(0.8, lg * sc)), word: Math.max(0.6, Math.min(5, wg * sc)), learned: true };
+  }
+  $("sent-save").addEventListener("click", function () {
+    var sp = learnSpacing();
+    if (!sp) { $("sent-status").textContent = "I couldn't find the word gaps. Write both lines with a space between words, then save again."; return; }
+    var p = active(); p.spacing = sp; persist();
+    store.write = null; persist();
+    $("sent-status").textContent = "Spacing saved.";
+    switchView("write");
+  });
+  $("sent-skip").addEventListener("click", function () { var p = active(); p.spacing.learned = true; persist(); switchView("write"); });
+  $("sent-clear").addEventListener("click", function () { teach.sentencePads.forEach(function (pd) { pd.clear(); }); });
+  $("sent-undo").addEventListener("click", undo);
+  $("goto-sentence").addEventListener("click", showSentence);
+  $("goto-write").addEventListener("click", function () { switchView("write"); });
+
+  // ---------------- setup ----------------
+  $("setup-sets").innerHTML = SETS.map(function (s) {
+    return '<label class="check"><input type="checkbox" id="set-' + s.id + '" value="' + s.id + '"' + (s.id !== "turkish" ? " checked" : "") + (s.required ? " disabled" : "") + "> " + esc(s.label) + "</label>";
+  }).join("");
+  function setupSets() { return SETS.filter(function (s) { return s.required || $("set-" + s.id).checked; }).map(function (s) { return s.id; }); }
+  function updateEstimate() {
+    var n = charsFor(setupSets()).length, per = +$("setup-per").value;
+    var mins = Math.max(2, Math.round(n * (4 + 2.5 * per) / 60));
+    $("setup-estimate").textContent = n + " characters × " + per + " = " + n * per + " written samples, about " + mins + " minutes.";
+  }
+  $("setup-form").addEventListener("change", updateEstimate);
+  $("setup-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("setup-name").value.trim(); if (!name) { $("setup-name").focus(); return; }
+    var id = uid();
+    store.profiles[id] = { v: 1, id: id, name: name, created: Date.now(), updated: Date.now(), per: +$("setup-per").value, sets: setupSets(), glyphs: {}, spacing: { letter: 0.25, word: 1.5, learned: false } };
+    store.active = id; store.write = null; persist();
+    $("setup-name").value = "";
+    teach.pads = [];
+    switchView("teach"); showChar(0);
+  });
+  $("setup-cancel").addEventListener("click", function () { switchView(active() ? "people" : "teach"); });
+
+  // ---------------- views ----------------
+  var view = "teach";
+  function switchView(v, forceSetup) {
+    view = v;
+    var p = active();
+    var showSetup = forceSetup || (!p && v !== "people");
+    $("view-setup").hidden = !showSetup;
+    $("setup-cancel").hidden = !p;
+    $("view-teach").hidden = showSetup || v !== "teach";
+    $("view-write").hidden = showSetup || v !== "write";
+    $("view-people").hidden = v !== "people";
+    document.querySelectorAll("nav.tabs button").forEach(function (b) { b.setAttribute("aria-selected", String(showSetup ? b.dataset.view === "teach" : b.dataset.view === v)); });
+    $("who").innerHTML = p ? "Handwriting: <b>" + esc(p.name) + "</b>" : "";
+    if (showSetup) { updateEstimate(); return; }
+    if (v === "teach") {
+      if (!teach.pads.length || teach.pads.length !== p.per) buildPads();
+      if ($("sentence").hidden) showChar(teach.idx); else renderGrid();
+      requestAnimationFrame(function () { teach.pads.concat(teach.sentencePads).forEach(function (pd) { pd.size(); }); });
+    }
+    if (v === "write") openWrite();
+    if (v === "people") renderPeople();
+  }
+  document.querySelectorAll("nav.tabs button").forEach(function (b) { b.addEventListener("click", function () { switchView(b.dataset.view); }); });
+  var rz = null;
+  window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { teach.pads.concat(teach.sentencePads).forEach(function (pd) { if (pd.cv.isConnected) pd.size(); }); }, 120); });
+
+  // ---------------- glyph preparation ----------------
+  function profileScale(p) {
+    var hs = [];
+    "acemnorsuvwxz".split("").forEach(function (c) {
+      (p.glyphs[c] || []).forEach(function (smp) {
+        var ys = []; (smp.s || smp.f).forEach(function (f) { for (var i = 1; i < f.length; i += 2) ys.push(f[i] / 100); });
+        hs.push(Math.max.apply(null, ys) - Math.min.apply(null, ys));
+      });
+    });
+    hs.sort(function (a, b) { return a - b; });
+    var sc = hs.length ? 1 / Math.max(0.3, hs[Math.floor(hs.length / 2)]) : 1;
+    return Math.max(0.5, Math.min(2.2, sc));
+  }
+  var glyphCache = { key: "", byKey: {}, list: [] };
+  function prepareGlyphs(p) {
+    var key = p.id + ":" + p.updated;
+    if (glyphCache.key === key) return glyphCache;
+    var scale = profileScale(p);
+    var list = [], byKey = {};
+    Object.keys(p.glyphs).forEach(function (ch) {
+      byKey[ch] = (p.glyphs[ch] || []).map(function (smp) {
+        var fill = !smp.s && !!smp.f;
+        var strokes = (smp.s || smp.f).map(function (f) { return unpack(f).map(function (q) { return [q[0] * scale, q[1] * scale]; }); });
+        var minX = Infinity, maxX = -Infinity, maxY = -Infinity;
+        strokes.forEach(function (s) { s.forEach(function (q) { if (q[0] < minX) minX = q[0]; if (q[0] > maxX) maxX = q[0]; if (q[1] > maxY) maxY = q[1]; }); });
+        var dy = !fill && NOT_ON_BASELINE.indexOf(ch) < 0 ? -maxY * 0.7 : 0; // sit it (mostly) on the baseline
+        strokes = strokes.map(function (s) { return s.map(function (q) { return [q[0] - minX, q[1] + dy]; }); });
+        var o = { id: list.length, key: ch, w: maxX - minX, strokes: strokes, fill: fill };
+        list.push(o);
+        return o;
+      });
+    });
+    glyphCache = { key: key, byKey: byKey, list: list };
+    return glyphCache;
+  }
+
+  // ---------------- layout (shared with PDF/PNG) ----------------
+  var PAGE_W = 210, PAGE_H = 297, ML = 20, MR = 15, MT = 16, MB = 16, MM2PT = 72 / 25.4;
+  var INK = { black: [0.08, 0.08, 0.08], blue: [0.12, 0.24, 0.71], pencil: [0.33, 0.34, 0.37] };
+  var PAPER_LINE = { lined: [0.62, 0.71, 0.84], grid: [0.73, 0.79, 0.87] };
+  var MAP = { "’": "'", "‘": "'", "‚": "'", "´": "'", "`": "'", "“": "\"", "”": "\"", "«": "\"", "»": "\"", "″": "\"", "–": "-", "−": "-", "­": "" };
+  var TIGHT_BEFORE = ".,;:!?)'\"", TIGHT_AFTER = "(„\"'";
+  function rng(seed) {
+    var s = seed >>> 0;
+    var r = function () { s = (s + 0x6D2B79F5) >>> 0; var t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    r.n = function (sd) { var u = 1 - r(), v = r(); var z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); return Math.max(-2.5, Math.min(2.5, z)) * sd; };
+    return r;
+  }
+  function glyphFor(ch, byKey) {
+    if (MAP[ch] !== undefined) ch = MAP[ch];
+    if (ch === "") return { skip: true };
+    if (byKey[ch] && byKey[ch].length) return { key: ch, list: byKey[ch], sx: 1, rot: 0 };
+    if (ch === "„" && byKey["\""] && byKey["\""].length) return { key: ch, list: byKey["\""], sx: 1, rot: 0, dy: 1.75 };
+    if (ch === "—" && byKey["-"] && byKey["-"].length) return { key: ch, list: byKey["-"], sx: 1.9, rot: 0 };
+    if (ch === "/" && byKey["l"] && byKey["l"].length) return { key: "/", list: byKey["l"], sx: 1, rot: 24 };
+    return null;
+  }
+  function layout(text, o, seed, G) {
+    var R = rng(seed), m = o.mess * 2, v2 = o.vary * 2, xh = o.size, skipped = {};
+    function warp(gi) {
+      if (v2 <= 0) return { pts: gi.strokes, w: gi.w };
+      var sxw = 1 + R.n(0.05) * v2, sh = R.n(0.07) * v2, a1 = R.n(0.03) * v2, f1 = 0.5 + R() * 0.8, p1 = R() * 6.2832, a2 = R.n(0.03) * v2, f2 = 0.5 + R() * 0.8, p2 = R() * 6.2832;
+      var minX = Infinity, maxX = -Infinity;
+      var pts = gi.strokes.map(function (st) {
+        return st.map(function (q) {
+          var nu = q[0] * sxw - q[1] * sh + a1 * Math.sin(f1 * q[1] * 6.2832 + p1), nv = q[1] + a2 * Math.sin(f2 * q[0] * 6.2832 + p2);
+          if (nu < minX) minX = nu; if (nu > maxX) maxX = nu;
+          return [nu, nv];
+        });
+      });
+      pts = pts.map(function (st) { return st.map(function (q) { return [q[0] - minX, q[1]]; }); });
+      return { pts: pts, w: maxX - minX };
+    }
+    var pitch = Math.max(o.pitch, xh * 3.2);
+    if (o.paper === "grid") pitch = Math.max(5, Math.ceil(pitch / 5 - 0.2) * 5);
+    var firstBase = o.paper === "grid" ? Math.ceil((MT + xh * 2.2) / 5) * 5 : MT + xh * 2.4;
+    var right = PAGE_W - MR, pages = [[]], lastInst = {}, baseY = firstBase;
+    function pick(list, key) { var n = list.length, k = Math.floor(R() * n); if (n > 1 && lastInst[key] === k) k = (k + 1 + Math.floor(R() * (n - 1))) % n; lastInst[key] = k; return list[k]; }
+    function makeWord(word) {
+      var out = [], x = 0, wS = 1 + R.n(0.03) * m, wDy = R.n(0.06) * m * xh, prev = null;
+      Array.from(word.replace(/…/g, "...")).forEach(function (ch) {
+        var g = glyphFor(ch, G.byKey);
+        if (g && g.skip) return;
+        if (!g) { skipped[ch] = true; x += 0.6 * xh; prev = null; return; }
+        var gi = pick(g.list, g.key), S = xh * wS * (1 + R.n(0.035) * m), rot = g.rot + R.n(1.6) * m, wp = warp(gi);
+        var w = g.rot ? wp.w * S + 1.8 * S * Math.sin(g.rot * Math.PI / 180) : wp.w * S * g.sx;
+        if (prev !== null) {
+          var tight = TIGHT_BEFORE.indexOf(g.key) >= 0 || TIGHT_AFTER.indexOf(prev) >= 0;
+          var mean = tight ? Math.min(o.lgap, 0.12) : o.lgap, sd = tight ? 0.03 : 0.09 * m;
+          x += Math.max(0, Math.min(1, mean + R.n(sd))) * xh;
+        }
+        out.push({ g: gi, pts: wp.pts, x: x, S: S, sx: g.sx, rot: rot, dy: wDy + R.n(0.045) * m * xh + (g.dy || 0) * S, w: w });
+        x += w; prev = g.key;
+      });
+      return { glyphs: out, w: x };
+    }
+    function newLine(extra) { baseY += pitch * (extra === undefined ? (1 + R.n(0.02) * m) : extra); if (baseY > PAGE_H - MB) { pages.push([]); baseY = firstBase; } }
+    var paraStart = true, emptyRun = 0, anyLine = false;
+    text.replace(/\r/g, "").replace(/\t/g, "    ").split("\n").forEach(function (ln) {
+      var words = ln.split(/ +/).filter(function (w) { return w.length; });
+      if (!words.length) { if (anyLine) { newLine(o.paper === "blank" ? (emptyRun ? 1 : 0.6) : 1); emptyRun++; } paraStart = true; return; }
+      if (anyLine) newLine();
+      anyLine = true; emptyRun = 0;
+      var lineStart = true, x0 = ML + (paraStart && o.indent ? 4 * xh : 0) + R.n(0.25) * m * xh, x = x0;
+      var slope = R.n(0.25) * m * Math.PI / 180, lineDy = R.n(0.05) * m * xh;
+      paraStart = false;
+      words.forEach(function (wd) {
+        var W = makeWord(wd); if (!W.glyphs.length) return;
+        var gap = o.gap * xh * (1 + R.n(0.18) * m);
+        if (!lineStart && x + gap + W.w > right + R.n(0.6) * m * xh) {
+          newLine(); x0 = ML + R.n(0.25) * m * xh; x = x0; lineStart = true;
+          slope = R.n(0.25) * m * Math.PI / 180; lineDy = R.n(0.05) * m * xh;
+        }
+        if (!lineStart) x += gap;
+        var pg = pages[pages.length - 1];
+        W.glyphs.forEach(function (p) { var gx = x + p.x; pg.push({ g: p.g, pts: p.pts, x: gx, y: baseY + lineDy + (gx - x0) * Math.tan(slope) + p.dy, S: p.S, sx: p.sx, rot: p.rot, w: p.w }); });
+        x += W.w; lineStart = false;
+      });
+    });
+    return { pages: pages, skipped: Object.keys(skipped), pitch: pitch, firstBase: firstBase };
+  }
+  function f3(v) { return (Math.round(v * 1000) / 1000).toString(); }
+  function f5(v) { return (Math.round(v * 100000) / 100000).toString(); }
+  function pathMM(q) {
+    return q.pts.map(function (st) {
+      return "M" + st.map(function (pt) { var r = mapPoint(q, pt[0], pt[1]); return r[0].toFixed(2) + " " + r[1].toFixed(2); }).join("L") + (q.g.fill ? "Z" : "");
+    }).join("");
+  }
+  function mapPoint(p, u, v) { var cx = p.w / 2, a = p.rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), lx = u * p.S * p.sx - cx, ly = v * p.S; return [p.x + cx + c * lx - s * ly, p.y + s * lx + c * ly]; }
+  function paperLines(o, L) {
+    var out = [];
+    if (o.paper === "lined") for (var y = L.firstBase; y <= PAGE_H - 6; y += L.pitch) out.push([0, y, PAGE_W, y]);
+    else if (o.paper === "grid") { for (var gy = 5; gy < PAGE_H; gy += 5) out.push([0, gy, PAGE_W, gy]); for (var gx = 5; gx < PAGE_W; gx += 5) out.push([gx, 0, gx, PAGE_H]); }
+    return out;
+  }
+  function rgbCss(c) { return "rgb(" + c.map(function (v) { return Math.round(v * 255); }).join(",") + ")"; }
+
+  // ---------------- write view ----------------
+  var SAMPLE = "Dear diary,\n\nToday I taught this page my handwriting. It learned every letter from a few samples, and now it can write anything I type. The quick brown fox jumps over the lazy dog.";
+  var current = null;
+  function wOpts() {
+    return {
+      size: +$("w-size").value, pitch: +$("w-pitch").value, gap: +$("w-gap").value, lgap: +$("w-lgap").value, pen: +$("w-pen").value, mess: +$("w-mess").value, vary: +$("w-vary").value,
+      indent: $("w-indent").checked, paper: document.querySelector("input[name=w-paper]:checked").value,
+      ink: document.querySelector("input[name=w-ink]:checked").value, transparent: $("w-transparent").checked
+    };
+  }
+  function messWord(v) { return v < 0.15 ? "Very neat" : v < 0.4 ? "Neat" : v < 0.65 ? "Natural" : v < 0.85 ? "Loose" : "Rushed"; }
+  function openWrite() {
+    var p = active();
+    if (!store.write || store.write.pid !== p.id) {
+      store.write = { pid: p.id, text: (store.write && store.write.text) || SAMPLE, seed: 20260928, o: null };
+      $("w-gap").value = p.spacing.word; $("w-lgap").value = p.spacing.letter;
+    } else if (store.write.o) {
+      var so = store.write.o;
+      ["size", "pitch", "gap", "lgap", "pen", "mess", "vary"].forEach(function (k) { if (typeof so[k] === "number") $("w-" + k).value = so[k]; });
+      $("w-indent").checked = so.indent !== false; $("w-transparent").checked = !!so.transparent;
+      var pp = $("w-paper-" + so.paper); if (pp) pp.checked = true;
+      var ik = $("w-ink-" + so.ink); if (ik) ik.checked = true;
+    }
+    $("w-text").value = store.write.text;
+    renderWrite();
+  }
+  function renderWrite() {
+    var p = active(); if (!p) return;
+    var o = wOpts();
+    $("w-size-out").textContent = o.size.toFixed(1) + " mm";
+    var ep = Math.max(o.pitch, o.size * 3.2); if (o.paper === "grid") ep = Math.max(5, Math.ceil(ep / 5 - 0.2) * 5);
+    $("w-pitch-out").textContent = ep.toFixed(1) + " mm" + (ep > o.pitch + 0.05 && o.paper !== "grid" ? " (raised to fit the letters)" : "");
+    $("w-gap-out").textContent = o.gap.toFixed(1) + " × letter height";
+    $("w-lgap-out").textContent = o.lgap.toFixed(2) + " × letter height";
+    $("w-pen-out").textContent = o.pen.toFixed(2) + " mm";
+    $("w-mess-out").textContent = messWord(o.mess);
+    $("w-vary-out").textContent = o.vary < 0.05 ? "Off" : o.vary < 0.35 ? "Subtle" : o.vary < 0.7 ? "Natural" : "Strong";
+    var text = $("w-text").value;
+    store.write.text = text; store.write.o = o; persist();
+    var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    $("w-count").textContent = words + (words === 1 ? " word" : " words");
+    var G = prepareGlyphs(p);
+    if (!G.list.length) {
+      $("w-pages").innerHTML = '<div class="card empty"><h2>Nothing taught yet</h2><p class="muted">Teach at least the lowercase letters, then come back here.</p><div class="row"><button type="button" class="primary" id="w-go-teach">Go to Teach</button></div></div>';
+      $("w-go-teach").addEventListener("click", function () { switchView("teach"); });
+      $("w-pages-count").textContent = ""; $("w-page").innerHTML = ""; $("w-missing").hidden = true; current = null;
+      return;
+    }
+    var L = layout(text, o, store.write.seed, G);
+    current = { L: L, o: o };
+    var ink = rgbCss(INK[o.ink]), lines = paperLines(o, L), lineCol = o.paper !== "blank" ? rgbCss(PAPER_LINE[o.paper]) : "";
+    $("w-pages").innerHTML = L.pages.map(function (pg, i) {
+      var s = '<figure class="sheet"><svg viewBox="0 0 210 297" role="img" aria-label="Handwritten page ' + (i + 1) + '"><rect width="210" height="297" fill="#ffffff"/>';
+      if (lines.length) s += '<g stroke="' + lineCol + '" stroke-width="0.12">' + lines.map(function (l) { return '<line x1="' + l[0] + '" y1="' + f3(l[1]) + '" x2="' + l[2] + '" y2="' + f3(l[3]) + '"/>'; }).join("") + "</g>";
+      var strokePart = pg.filter(function (q) { return !q.g.fill; }).map(function (q) { return '<path d="' + pathMM(q) + '"/>'; }).join("");
+      var fillPart = pg.filter(function (q) { return q.g.fill; }).map(function (q) { return '<path d="' + pathMM(q) + '"/>'; }).join("");
+      if (strokePart) s += '<g fill="none" stroke="' + ink + '" stroke-width="' + f3(o.pen) + '" stroke-linecap="round" stroke-linejoin="round">' + strokePart + "</g>";
+      if (fillPart) s += '<g fill="' + ink + '" stroke="none">' + fillPart + "</g>";
+      return s + "</svg><figcaption>Page " + (i + 1) + " of " + L.pages.length + "</figcaption></figure>";
+    }).join("");
+    $("w-pages-count").textContent = L.pages.length + (L.pages.length === 1 ? " page" : " pages");
+    var sel = $("w-page"), prev = sel.value;
+    sel.innerHTML = L.pages.map(function (_, i) { return '<option value="' + i + '">page ' + (i + 1) + "</option>"; }).join("");
+    if (prev && +prev < L.pages.length) sel.value = prev;
+    var mw = $("w-missing");
+    if (L.skipped.length) {
+      mw.hidden = false;
+      mw.innerHTML = "Not taught yet, so left out: <code></code> <button type=\"button\" class=\"ghost\" id=\"w-teach-missing\" style=\"padding:4px 8px;margin-left:4px\">Teach them</button>";
+      mw.querySelector("code").textContent = L.skipped.join(" ");
+      $("w-teach-missing").addEventListener("click", function () { teachMissing(L.skipped); });
+    } else mw.hidden = true;
+  }
+  function teachMissing(chars) {
+    var p = active(), add = [];
+    chars.forEach(function (c) { SETS.forEach(function (s) { if (s.chars.indexOf(c) >= 0 && p.sets.indexOf(s.id) < 0) add.push(s.id); }); });
+    add.forEach(function (id) { if (p.sets.indexOf(id) < 0) p.sets.push(id); });
+    persist();
+    var list = charsFor(p.sets), k = list.indexOf(chars.filter(function (c) { return list.indexOf(c) >= 0; })[0]);
+    teach.pads = []; switchView("teach"); showChar(k >= 0 ? k : 0);
+    if (k < 0) $("teach-status").textContent = "Some of those characters (" + chars.join(" ") + ") can't be taught here yet.";
+  }
+  var wt = null;
+  $("write-form").addEventListener("input", function (e) { if (e.target.id === "w-text") { clearTimeout(wt); wt = setTimeout(renderWrite, 120); } else renderWrite(); });
+  $("write-form").addEventListener("change", renderWrite);
+  $("write-form").addEventListener("submit", function (e) { e.preventDefault(); });
+  $("w-reroll").addEventListener("click", function () { store.write.seed = (store.write.seed * 1103515245 + 12345) >>> 0; renderWrite(); $("w-status").textContent = "New variation drawn."; });
+
+  // PNG
+  function canvasFor(i, dpi) {
+    var o = current.o, L = current.L, pg = L.pages[i] || [], k = dpi / 25.4;
+    var cv = document.createElement("canvas"); cv.width = Math.round(PAGE_W * k); cv.height = Math.round(PAGE_H * k);
+    var ctx = cv.getContext("2d");
+    if (!o.transparent) {
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, cv.width, cv.height);
+      var lines = paperLines(o, L);
+      if (lines.length) { ctx.strokeStyle = rgbCss(PAPER_LINE[o.paper]); ctx.lineWidth = 0.12 * k; ctx.beginPath(); lines.forEach(function (l) { ctx.moveTo(l[0] * k, l[1] * k); ctx.lineTo(l[2] * k, l[3] * k); }); ctx.stroke(); }
+    }
+    ctx.strokeStyle = ctx.fillStyle = rgbCss(INK[o.ink]); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    pg.forEach(function (p) {
+      ctx.lineWidth = o.pen * (p.S / o.size) * k;
+      ctx.beginPath();
+      p.pts.forEach(function (s) { s.forEach(function (q, j) { var r = mapPoint(p, q[0], q[1]); if (j) ctx.lineTo(r[0] * k, r[1] * k); else ctx.moveTo(r[0] * k, r[1] * k); }); if (p.g.fill) ctx.closePath(); });
+      if (p.g.fill) ctx.fill(); else ctx.stroke();
+    });
+    return cv;
+  }
+  function pngBlob(i) { return new Promise(function (res, rej) { canvasFor(i, 200).toBlob(function (b) { b ? res(b) : rej(new Error("png")); }, "image/png"); }); }
+  // PDF
+  function pdfOps(i) {
+    var o = current.o, L = current.L, pg = L.pages[i] || [], parts = [];
+    function P(x, y) { return (x * MM2PT).toFixed(2) + " " + ((PAGE_H - y) * MM2PT).toFixed(2); }
+    var lines = paperLines(o, L);
+    if (lines.length) { parts.push((0.12 * MM2PT).toFixed(3) + " w " + PAPER_LINE[o.paper].map(function (v) { return v.toFixed(3); }).join(" ") + " RG"); lines.forEach(function (l) { parts.push(P(l[0], l[1]) + " m " + P(l[2], l[3]) + " l S"); }); }
+    var inkCol = INK[o.ink].map(function (v) { return v.toFixed(3); }).join(" ");
+    parts.push("1 J 1 j " + inkCol + " RG " + inkCol + " rg");
+    pg.forEach(function (p) {
+      var seg = p.g.fill ? [] : [(o.pen * (p.S / o.size) * MM2PT).toFixed(3) + " w"];
+      p.pts.forEach(function (s) { s.forEach(function (q, j) { var r = mapPoint(p, q[0], q[1]); seg.push(P(r[0], r[1]) + (j ? " l" : " m")); }); if (p.g.fill) seg.push("h"); });
+      seg.push(p.g.fill ? "f" : "S"); parts.push(seg.join("\n"));
+    });
+    return parts.join("\n");
+  }
+  function deflate(bytes) {
+    if (typeof CompressionStream === "undefined") return Promise.resolve(null);
+    try { return new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer().then(function (b) { return new Uint8Array(b); }).catch(function () { return null; }); }
+    catch (e) { return Promise.resolve(null); }
+  }
+  function buildPDF() {
+    var enc = new TextEncoder(), n = current.L.pages.length, streams = [];
+    for (var i = 0; i < n; i++) streams.push(enc.encode(pdfOps(i)));
+    return Promise.all(streams.map(deflate)).then(function (zs) {
+      var chunks = [], offs = [], pos = 0;
+      function add(x) { var b = typeof x === "string" ? enc.encode(x) : x; chunks.push(b); pos += b.length; }
+      function obj(num, body) { offs[num] = pos; add(num + " 0 obj\n"); body(); add("\nendobj\n"); }
+      add("%PDF-1.4\n"); add(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+      var total = 2 + 2 * n, kids = [];
+      for (var j = 0; j < n; j++) kids.push((3 + 2 * j) + " 0 R");
+      obj(1, function () { add("<< /Type /Catalog /Pages 2 0 R >>"); });
+      obj(2, function () { add("<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + n + " >>"); });
+      for (var k = 0; k < n; k++) {
+        (function (k) {
+          var pn = 3 + 2 * k, cn = pn + 1;
+          obj(pn, function () { add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << >> /Contents " + cn + " 0 R >>"); });
+          obj(cn, function () { var z = zs[k], raw = streams[k]; if (z) { add("<< /Length " + z.length + " /Filter /FlateDecode >>\nstream\n"); add(z); } else { add("<< /Length " + raw.length + " >>\nstream\n"); add(raw); } add("\nendstream"); });
+        })(k);
+      }
+      var xref = pos, x = "xref\n0 " + (total + 1) + "\n0000000000 65535 f \n";
+      for (var t = 1; t <= total; t++) x += String(offs[t]).padStart(10, "0") + " 00000 n \n";
+      add(x + "trailer\n<< /Size " + (total + 1) + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+      return new Blob(chunks, { type: "application/pdf" });
+    });
+  }
+  var downloads = null, inClaude = !!(window.claude && typeof window.claude.use === "function");
+  function canSave() { return !!downloads || !inClaude; }
+  function dataUrlBlob(u) { var parts = u.split(","), bin = atob(parts[1]), n = bin.length, arr = new Uint8Array(n); for (var i = 0; i < n; i++) arr[i] = bin.charCodeAt(i); return new Blob([arr], { type: parts[0].split(":")[1].split(";")[0] }); }
+  function saveFile(filename, blob) {
+    if (downloads) return downloads.save({ filename: filename, data: blob });
+    var file = null;
+    try { file = new File([blob], filename, { type: blob.type || "application/octet-stream" }); } catch (e) { file = null; }
+    if (file && navigator.maxTouchPoints > 0 && navigator.canShare && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file] }).then(function () { return { status: "shared" }; }, function (e) { throw (e && e.name === "AbortError") ? { code: "declined" } : e; });
+    }
+    var url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+    return Promise.resolve({ status: "saved" });
+  }
+  function pdfNow() {
+    // uncompressed, built synchronously so the share sheet opens straight from the tap
+    var enc = new TextEncoder(), n = current.L.pages.length, chunks = [], offs = [], pos = 0;
+    function add(x) { var b = typeof x === "string" ? enc.encode(x) : x; chunks.push(b); pos += b.length; }
+    function obj(num, body) { offs[num] = pos; add(num + " 0 obj\n"); body(); add("\nendobj\n"); }
+    add("%PDF-1.4\n");
+    var total = 2 + 2 * n, kids = [];
+    for (var j = 0; j < n; j++) kids.push((3 + 2 * j) + " 0 R");
+    obj(1, function () { add("<< /Type /Catalog /Pages 2 0 R >>"); });
+    obj(2, function () { add("<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + n + " >>"); });
+    for (var k = 0; k < n; k++) {
+      (function (k) {
+        var pn = 3 + 2 * k, cn = pn + 1, raw = enc.encode(pdfOps(k));
+        obj(pn, function () { add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << >> /Contents " + cn + " 0 R >>"); });
+        obj(cn, function () { add("<< /Length " + raw.length + " >>\nstream\n"); add(raw); add("\nendstream"); });
+      })(k);
+    }
+    var xref = pos, x = "xref\n0 " + (total + 1) + "\n0000000000 65535 f \n";
+    for (var t = 1; t <= total; t++) x += String(offs[t]).padStart(10, "0") + " 00000 n \n";
+    add(x + "trailer\n<< /Size " + (total + 1) + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+    return new Blob(chunks, { type: "application/pdf" });
+  }
+  function fname(p, ext) { return (p.name || "handwriting").replace(/[^\wÀ-ɏ -]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() + ext; }
+  function saveFail(e, el, what) {
+    var c = e && e.code;
+    el.textContent = c === "declined" ? "Save cancelled." : c === "rate_limited" ? "A save prompt is already open." : "Couldn't save the " + what + " here. Try Copy image instead.";
+  }
+  $("w-pdf").addEventListener("click", function () {
+    if (!canSave() || !current) return; var b = this; b.disabled = true; $("w-status").textContent = "Building the PDF…";
+    var job = downloads ? buildPDF().then(function (blob) { return saveFile(fname(active(), "-handwriting.pdf"), blob); }) : saveFile(fname(active(), "-handwriting.pdf"), pdfNow());
+    job.then(function (r) { $("w-status").textContent = r && r.status === "shared" ? "PDF shared." : "PDF saved."; }).catch(function (e) { saveFail(e, $("w-status"), "PDF"); }).then(function () { b.disabled = false; });
+  });
+  $("w-png").addEventListener("click", function () {
+    if (!canSave() || !current) return; var i = +$("w-page").value || 0, b = this; b.disabled = true; $("w-status").textContent = "Drawing the image…";
+    var pname = fname(active(), "-page-" + (i + 1) + ".png");
+    var job = downloads ? pngBlob(i).then(function (blob) { return saveFile(pname, blob); }) : saveFile(pname, dataUrlBlob(canvasFor(i, 200).toDataURL("image/png")));
+    job.then(function (r) { $("w-status").textContent = r && r.status === "shared" ? "PNG shared." : "PNG saved."; }).catch(function (e) { saveFail(e, $("w-status"), "image"); }).then(function () { b.disabled = false; });
+  });
+  $("w-copy").addEventListener("click", function () {
+    if (!current) return; var i = +$("w-page").value || 0;
+    try {
+      if (!navigator.clipboard || typeof ClipboardItem === "undefined") throw new Error("no clipboard");
+      navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob(i) })]).then(function () { $("w-status").textContent = "Page " + (i + 1) + " copied. Paste it into your notes."; })
+        .catch(function () { $("w-status").textContent = "This browser blocked copying images. Use Save PNG instead."; });
+    } catch (e) { $("w-status").textContent = "This browser can't copy images. Use Save PNG instead."; }
+  });
+
+  // ---------------- handwritings list ----------------
+  var confirmDelete = null;
+  function renderPeople() {
+    var ids = Object.keys(store.profiles).sort(function (a, b) { return store.profiles[b].updated - store.profiles[a].updated; });
+    if (!ids.length) { $("people").innerHTML = '<div class="card empty"><h2>No handwritings yet</h2><p class="muted">Start a new one, or load a handwriting file someone saved.</p></div>'; return; }
+    $("people").innerHTML = ids.map(function (id) {
+      var p = store.profiles[id], n = charsFor(p.sets).length, d = taughtCount(p), isA = id === store.active;
+      return '<article class="card person' + (isA ? " active" : "") + '" data-id="' + id + '"><h3>' + esc(p.name) + '</h3>' +
+        '<p class="meta">' + d + " of " + n + " characters · " + p.per + " samples each" + (p.spacing.learned ? " · spacing learned" : "") + (isA ? " · in use" : "") + "</p>" +
+        '<div class="progress"><i style="width:' + (n ? 100 * d / n : 0) + '%"></i></div>' +
+        '<div class="row">' + (isA ? "" : '<button type="button" data-act="use">Use</button>') + '<button type="button" data-act="teach">Teach more</button><button type="button" data-act="export">Save file</button>' +
+        (confirmDelete === id ? '<button type="button" class="danger" data-act="del-yes">Delete for good</button><button type="button" class="ghost" data-act="del-no">Keep</button>' : '<button type="button" class="ghost danger" data-act="del">Delete</button>') + "</div></article>";
+    }).join("");
+  }
+  $("people").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var id = b.closest("[data-id]").dataset.id, p = store.profiles[id], act = b.dataset.act;
+    if (act === "use") { store.active = id; store.write = null; teach.pads = []; persist(); switchView("write"); }
+    else if (act === "teach") { store.active = id; teach.pads = []; persist(); switchView("teach"); var k = nextMissing(-1); showChar(k >= 0 ? k : 0); }
+    else if (act === "export") exportProfile(p);
+    else if (act === "del") { confirmDelete = id; renderPeople(); }
+    else if (act === "del-no") { confirmDelete = null; renderPeople(); }
+    else if (act === "del-yes") {
+      delete store.profiles[id]; confirmDelete = null;
+      if (store.active === id) { store.active = Object.keys(store.profiles)[0] || null; store.write = null; teach.pads = []; }
+      persist(); renderPeople(); $("who").innerHTML = active() ? "Handwriting: <b>" + esc(active().name) + "</b>" : ""; $("p-status").textContent = "Deleted " + p.name + ".";
+    }
+  });
+  function exportProfile(p) {
+    if (!canSave()) { $("p-status").textContent = "Saving files isn't available in this view."; return; }
+    var data = new Blob([JSON.stringify({ inkai: 1, profile: p })], { type: "application/json" });
+    saveFile(fname(p, "-inkai.json"), data).then(function () { $("p-status").textContent = "Saved " + p.name + "'s handwriting file."; })
+      .catch(function (e) { saveFail(e, $("p-status"), "file"); });
+  }
+  $("p-new").addEventListener("click", function () { switchView("teach", true); $("setup-name").focus(); });
+  $("p-load").addEventListener("change", function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var j = JSON.parse(rd.result), p = j && j.profile;
+        if (!j || (j.inkai !== 1 && j.letterhand !== 1) || !p || typeof p.name !== "string" || !p.glyphs || !Array.isArray(p.sets)) throw new Error("format");
+        var id = uid(); p.id = id; p.updated = Date.now(); p.per = Math.max(1, Math.min(5, +p.per || 3));
+        p.spacing = p.spacing || { letter: 0.25, word: 1.5, learned: false };
+        store.profiles[id] = p; store.active = id; store.write = null; teach.pads = []; persist();
+        $("p-status").textContent = "Loaded " + p.name + "'s handwriting.";
+        renderPeople(); $("who").innerHTML = "Handwriting: <b>" + esc(p.name) + "</b>";
+      } catch (e) { $("p-status").textContent = "That file isn't an InkAI handwriting file."; }
+    };
+    rd.onerror = function () { $("p-status").textContent = "Couldn't read that file."; };
+    rd.readAsText(f);
+    this.value = "";
+  });
+
+  // ---------------- boot ----------------
+  load();
+  var p0 = active();
+  if (!p0) switchView("teach");
+  else if (taughtCount(p0) >= 26) switchView("write");
+  else { switchView("teach"); var k0 = nextMissing(-1); showChar(k0 >= 0 ? k0 : 0); }
+  if (!storageOk) $("teach-status").textContent = "This browser isn't keeping data, so save a handwriting file when you finish.";
+
+  if (inClaude) {
+    window.claude.use("downloads").then(function (d) { downloads = d; if (!d) noDl(); }).catch(noDl);
+  } else if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+  function noDl() { ["w-pdf", "w-png"].forEach(function (id) { $(id).hidden = true; }); }
+})();
+</script>
+</body>
+</html>
