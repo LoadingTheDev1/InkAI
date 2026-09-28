@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>InkAI</title>
 <meta name="description" content="Teach InkAI your handwriting once, then type anything and get it back handwritten. Works offline on iPad.">
 <meta name="theme-color" content="#0B6B5C">
@@ -89,6 +89,9 @@ img { max-width: 100%; }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { touch-action: manipulation; }
+#capture, #sentence { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#capture button, #sentence button { touch-action: manipulation; }
 body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 16px 40px; }
 .wrap { max-width: 1320px; margin-inline: auto; display: grid; gap: 18px; }
 header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
@@ -429,6 +432,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
 
   // ---------------- writing pad ----------------
   var penSeen = false;
+  try { penSeen = localStorage.getItem("inkai-pen") === "1"; } catch (e) { penSeen = false; }
+  function markPen() { if (penSeen) return; penSeen = true; try { localStorage.setItem("inkai-pen", "1"); } catch (e) { /* storage unavailable */ } }
   var undoStack = [];
   function Pad(opts) {
     var self = this;
@@ -445,7 +450,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
       return [(e.clientX - r.left) / k, (e.clientY - r.top) / k - self.top];
     }
     this.cv.addEventListener("pointerdown", function (e) {
-      if (e.pointerType === "pen") penSeen = true;
+      if (e.pointerType === "pen") markPen();
       if (penSeen && e.pointerType === "touch") return;
       if (e.button > 0) return;
       e.preventDefault();
@@ -1122,6 +1127,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
     rd.readAsText(f);
     this.value = "";
   });
+
+  // ---------------- palm protection (iPad) ----------------
+  function teaching() { return !$("view-teach").hidden; }
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) {
+    document.addEventListener(t, function (e) { if (teaching()) e.preventDefault(); }, { passive: false });
+  });
+  document.addEventListener("touchmove", function (e) {
+    if (!teaching()) return;
+    if (e.touches.length > 1 || (penSeen && e.target.closest && e.target.closest("#capture, #sentence"))) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("touchstart", function (e) {
+    if (teaching() && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
 
   // ---------------- boot ----------------
   load();
